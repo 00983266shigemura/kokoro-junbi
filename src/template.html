@@ -45,7 +45,7 @@
   .home-l{float:left; width:44%; text-align:center;}
   .home-l img{margin:0 auto; max-height:300px; width:auto;}
   .home-r{float:right; width:54%; padding-top:6px;}
-  .bubble{background:var(--card); border:3px solid var(--line); border-radius:24px; padding:12px 18px; font-size:1rem; line-height:1.6; margin:8px 0 14px;}
+  .bubble{background:var(--card); word-break:keep-all; border:3px solid var(--line); border-radius:24px; padding:12px 18px; font-size:1rem; line-height:1.6; margin:8px 0 14px;}
   #start-btn{font-size:1.25rem; padding:16px 44px; background:var(--daidai);}
   .home-foot{clear:both; overflow:hidden; padding-top:10px;}
   .home-foot #grown-btn{float:right;}
@@ -70,7 +70,7 @@
   .qbox img{margin:0 auto 6px; max-height:300px; width:auto;}
   .qbox img.tiny{max-height:110px;}
   .qtext{font-size:1.04rem; font-weight:bold; line-height:1.45; word-break:keep-all;}
-  .choice{display:block; width:100%; margin:0 0 16px; text-align:left; background:var(--card); color:var(--ink); border:4px solid var(--line); border-radius:18px; padding:18px 18px; font-size:1rem; line-height:1.4; min-height:110px;}
+  .choice{display:block; width:100%; word-break:keep-all; margin:0 0 16px; text-align:left; background:var(--card); color:var(--ink); border:4px solid var(--line); border-radius:18px; padding:18px 18px; font-size:1rem; line-height:1.4; min-height:110px;}
   .choice .mark{display:block; font-size:0.67rem; font-weight:bold; min-height:1.2em;}
   .choice.right{border-color:var(--ao); background:var(--ao-bg);}
   .choice.right .mark{color:var(--ao);}
@@ -86,11 +86,12 @@
   .ring{position:absolute; border:5px solid var(--daidai); border-radius:50%; -webkit-animation:pulse 1.2s ease-in-out infinite; animation:pulse 1.2s ease-in-out infinite;}
   @-webkit-keyframes pulse{0%{-webkit-transform:scale(1.0);}50%{-webkit-transform:scale(1.15);}100%{-webkit-transform:scale(1.0);}}
   @keyframes pulse{0%{transform:scale(1.0);}50%{transform:scale(1.15);}100%{transform:scale(1.0);}}
-  .yaku{font-size:1rem; font-weight:bold; color:var(--ao); margin:6px 0 2px; line-height:1.4;}
+  .yaku{font-size:1rem; word-break:keep-all; font-weight:bold; color:var(--ao); margin:6px 0 2px; line-height:1.4;}
   .tip{font-size:0.75rem; color:var(--ink-soft); margin:2px 0;}
   .card2{overflow:hidden; text-align:left;}
-  .card2 .half{float:left; width:48%; margin:1%; border:3px solid var(--line); border-radius:14px; padding:8px 10px; font-size:0.75rem; line-height:1.5;}
-  .card2 .half b{display:block; font-size:0.83rem;}
+  .card2 .half{margin:0 0 8px; border:3px solid var(--line); border-radius:14px; padding:6px 12px; font-size:0.83rem; line-height:1.45;}
+  .card2 ul{margin:2px 0; padding-left:1.1em;}
+  .card2 .half b{display:block; font-size:0.92rem;}
   .card2 .quiet{border-color:var(--ao);} .card2 .talk{border-color:var(--daidai);}
   #next-btn{font-size:1.04rem; padding:12px 40px; margin-top:6px;}
 
@@ -106,6 +107,7 @@
   .fin-l img{margin:0 auto; max-height:420px; width:auto;}
   .fin-r{float:right; width:60%;}
   .omamori{font-size:1.25rem; letter-spacing:3px; color:var(--ki);}
+  .omamori span{display:block; letter-spacing:0; font-size:0.83rem; font-weight:bold;}
 
   /* おとなのひと */
   .grown{background:var(--card); border:2px solid var(--line); border-radius:16px; padding:10px 14px; font-size:0.58rem; line-height:1.45;}

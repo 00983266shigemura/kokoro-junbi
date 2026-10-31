@@ -191,7 +191,7 @@
     setImg(el('fin-img'), 'hug');
     setText(el('fin-title'), (S.name ? S.name + '、' : '') + 'じゅんび できたね！');
     for (i = 0; i < G.scenes.length; i++) { h += '★'; }
-    setText(el('fin-stars'), h + '　こころの おまもり');
+    el('fin-stars').innerHTML = h + '<span>こころの おまもり</span>';
     setText(el('fin-msg'), y + 'から：「どんな ときも だいすき。' + y + 'は いつも こころの なかに いっしょに いるよ。」');
     setText(el('fin-hug'), 'ここで ぎゅっと しよう。');
     KJ.snd.play('finale');

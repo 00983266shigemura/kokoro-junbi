@@ -74,6 +74,8 @@ document.getElementById('f').onload = function () {
     el('fin-home').click();
   }
   try {
+    /* 撮るときだけ＝うすく あらわれる 動きを 止めて、できあがりの すがたを 撮る（測る ときは 止めない） */
+    if (shot) { var st = d.createElement('style'); st.textContent = '*{-webkit-transition:none !important; transition:none !important;}'; d.head.appendChild(st); }
     w.KJ.seed(7);
     if (meas('home')) { stop(); }
     w.KJ.ui.startBreath();
