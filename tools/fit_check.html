@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<!-- こころの じゅんび ── iPad よこおき（1024×640）で 1がめんに おさまるかの 検査（CCが使う。tools/check_all.zsh から よぶ）
+     ぜんぶの がめんと、こたえた あとの すがた（まちがい・こたえの 絵・やくそく・つぎへ）を じゅんに 出して、たて・よこの はみだしを 測る。
+     あわせて、画面から 1まわり ぜんぶ（10もん と みじかい 5もん）を 通して 例外が 出ないかを 見る。
+     #shot=〈なまえ〉 を つけると、そこで とめて スクリーンショット用に する -->
+<html lang="ja"><head><meta charset="utf-8"><title>fit check</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- format-ok CCが機械で読む検査ページ（しげ向け成果物ではない） -->
+<style>
+  :root{ color-scheme: light dark; --ground:#ffffff; --ink:#1b1b1b; }
+  @media (prefers-color-scheme: dark){ :root{ --ground:#14191f; --ink:#e8edf2; } }
+  html{font-size:24px;}
+  body{ margin:0; background:var(--ground); color:var(--ink); font-size:0.6rem; }
+  #out{ white-space:pre; font-family:monospace; }
+</style>
+</head>
+<body>
+<!-- 開くのは 無音の複製だけ（tools/mkpage.py が作る）。index.html を直接開かない＝試験で音を鳴らさない -->
+<iframe id="f" src="../logs/silent_index.html" style="width:1024px;height:640px;border:0;display:block"></iframe>
+<div id="out"></div>
+<script>
+var sz = location.hash.match(/size=(\d+)x(\d+)/) || [0, 1024, 640];
+var W = +sz[1], H = +sz[2], fails = [], n = 0, maxH = 0, maxTag = '';
+document.getElementById('f').style.width = W + 'px'; document.getElementById('f').style.height = H + 'px';
+var shot = (location.hash.match(/shot=([a-z0-9]+)/) || [])[1] || '';
+function put(s) { document.getElementById('out').textContent += s + '\n'; }
+document.getElementById('f').onload = function () {
+  var w = this.contentWindow, d = w.document, errs = [], played = 0;
+  w.onerror = function (m) { errs.push(String(m)); };
+  function el(id) { return d.getElementById(id); }
+  function meas(tag) {
+    var de = d.documentElement, h = Math.max(de.scrollHeight, d.body.scrollHeight), wd = Math.max(de.scrollWidth, d.body.scrollWidth);
+    n++;
+    if (h > maxH) { maxH = h; maxTag = tag; }
+    if (h > H || wd > W) { fails.push(tag + ' たて=' + h + ' よこ=' + wd); }
+    return shot === tag;
+  }
+  function stop() { throw 'shot'; }
+  function round(label, yobi, shortMode, wrongAt) {
+    var S = w.KJ.ui.state(), r, i, cards, good, bad, k;
+    S.yobikata = yobi; S.shortMode = shortMode;
+    w.KJ.ui.startQuiz();
+    r = w.KJ.ui.round();
+    for (i = 0; i < r.scenes.length; i++) {
+      if (meas('play' + label + i)) { stop(); }
+      cards = el('choices').getElementsByTagName('button');
+      if (cards.length !== 2) { errs.push(label + i + ' えらぶ ボタンが 2つでない'); }
+      good = r.order[0].good ? 0 : 1; bad = 1 - good;
+      if (wrongAt.indexOf(i) >= 0) {
+        cards[bad].click();
+        if (el('msg').textContent === '' || cards[bad].className.indexOf('wrong') < 0) { errs.push(label + i + ' まちがいの しるしが 出ない'); }
+        if (meas('hint' + label + i)) { stop(); }
+        cards[bad].click();   /* おなじ まちがいを もう1回＝なにも おきない */
+        if (r.done) { errs.push(label + i + ' まちがいを 2かい おしたら すすんだ'); }
+      }
+      cards[good].click();
+      if (!r.done) { errs.push(label + i + ' ただしい ほうで すすまない'); }
+      w.KJ.ui.showReveal();
+      if (el('reveal').style.display === 'none') { errs.push(label + i + ' こたえの 絵が 出ない'); }
+      if (el('rv-yaku').textContent.indexOf('{y}') >= 0 || el('q-text').textContent.indexOf('{y}') >= 0) { errs.push(label + i + ' {y} が のこった'); }
+      if (meas('ans' + label + i)) { stop(); }
+      played++;
+      el('next-btn').click();
+    }
+    if (r.stars !== r.scenes.length) { errs.push(label + ' ほしの かずが ちがう ' + r.stars); }
+    if (el('scr-magic').style.display === 'none') { errs.push(label + ' 3つの ことばへ すすまない'); }
+    if (meas('magic' + label)) { stop(); }
+    for (k = 0; k < 3; k++) { el('magic-list').getElementsByTagName('button')[k].click(); }
+    if (el('magic-next').style.display === 'none') { errs.push(label + ' 3つ ひらいても つぎへ が 出ない'); }
+    if (meas('magicopen' + label)) { stop(); }
+    el('magic-next').click();
+    if (el('scr-final').style.display === 'none') { errs.push(label + ' さいごの がめんへ すすまない'); }
+    if (meas('final' + label)) { stop(); }
+    el('fin-home').click();
+  }
+  try {
+    w.KJ.seed(7);
+    if (meas('home')) { stop(); }
+    w.KJ.ui.startBreath();
+    if (meas('breath')) { stop(); }
+    w.KJ.ui.state().name = 'あいうえおかきく';
+    round('a', 4, false, [1, 3, 6]);
+    round('b', 0, true, [0]);
+    if (meas('homeafter')) { stop(); }
+    var ev = d.createEvent('MouseEvents'); ev.initEvent('mousedown', true, true); el('grown-btn').dispatchEvent(ev);
+    w.setTimeout(function () {
+      meas('grown');
+      if (el('scr-grown').style.display === 'none') { errs.push('おとなのひと が ひらかない'); }
+      put('MEASURED=' + n + ' MAXH=' + maxH + ' at ' + maxTag + ' PLAYED=' + played);
+      put('ERRS=' + errs.length + (errs.length ? ' ' + errs.join(' | ') : ''));
+      var asked = w.__audioAsked, silent = (typeof asked === 'number' && asked > 0 && w.KJ.snd.ctx === null);
+      put('AUDIO asked=' + asked + ' ctx=' + (w.KJ.snd.ctx === null ? 'なし' : 'あり') + ' → ' + (silent ? '無音' : '無音でない'));
+      put(fails.length === 0 && errs.length === 0 && silent && played === 15 ? 'FIT=PASS' : 'FIT=FAIL played=' + played + ' ' + (silent ? '' : '無音化が効いていない ') + fails.slice(0, 12).join(' / ') + ' ' + errs.slice(0, 6).join(' | '));
+    }, 1500);
+  } catch (e) {
+    if (e === 'shot') { put('SHOT=' + shot); document.getElementById('out').style.display = 'none'; }
+    else { put('FIT=FAIL 例外 ' + e + (e && e.stack ? ' ' + e.stack : '')); }
+  }
+};
+</script>
+</body></html>

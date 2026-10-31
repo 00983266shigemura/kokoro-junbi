@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<!-- manifest＝つうしんが なくても ひらけるように、端末へ しまう ファイルの一覧（tools/build_app.py が作る） -->
+<html lang="ja" manifest="offline.appcache">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="こころ">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+<title>こころの じゅんび</title>
+<!-- format-ok 年長の子が触るアプリ画面（デザインが主目的の成果物＝表示整形の規程は適用外。子どもの画面の文字は全てかな） -->
+<style>
+  :root{
+    --ground:#fbf6ee; --card:#ffffff; --ink:#1b1b1b; --ink-soft:#5c6670; --line:#e0d8cc;
+    --ao:#1f6fb8; --ao-bg:#e8f1fa; --daidai:#e8892b; --daidai-bg:#fdf1e2; --daidai-ink:#8a5200;
+    --momo:#f2b39a; --nashi:#9aa5ae; --on-accent:#ffffff; --ki:#f2c230;
+    color-scheme: light dark;
+  }
+  /* 暗い画面設定でも 絵（白地）が浮かないよう、地だけ すこし暗くする */
+  @media (prefers-color-scheme: dark){
+    :root{ --ground:#1b2026; --card:#262d35; --ink:#eef2f5; --ink-soft:#b0bcc7; --line:#46515c; --ao-bg:#173a57; --daidai-bg:#3f2f14; --daidai-ink:#f2b544;
+      --ao:#2f80c8; --daidai:#e8892b; --ki:#f2c230; --momo:#d99a82; --nashi:#6b7782; --on-accent:#ffffff; }
+    .pic img,.qbox img,.home-l img,.fin-l img{border-radius:10px;}
+  }
+  *{box-sizing:border-box;}
+  html{font-size:24px;}
+  html,body{margin:0; padding:0;}
+  body{ background:var(--ground); color:var(--ink); font-family:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; font-size:0.92rem; line-height:1.55;
+    -webkit-text-size-adjust:100%; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:rgba(0,0,0,0); }
+  .screen{padding:10px 16px; max-width:1024px; margin:0 auto; overflow:hidden;}
+  h1{font-size:1.3rem; margin:4px 0;}
+  p{margin:6px 0;}
+  img{display:block; max-width:100%; height:auto;}
+  button{ font-family:inherit; font-size:0.92rem; -webkit-appearance:none; appearance:none; border:0; border-radius:14px; padding:12px 22px; color:var(--on-accent); background:var(--ao); cursor:pointer; min-height:58px; }
+  button.sub{background:var(--nashi);}
+  button.small{font-size:0.62rem; min-height:0; padding:8px 14px;}
+  .note{color:var(--ink-soft); font-size:0.62rem;}
+  .col-l{float:left; width:50%;}
+  .col-r{float:right; width:48%;}
+  .clear{clear:both;}
+
+  /* はじめ */
+  .home-l{float:left; width:44%; text-align:center;}
+  .home-l img{margin:0 auto; max-height:300px; width:auto;}
+  .home-r{float:right; width:54%; padding-top:6px;}
+  .bubble{background:var(--card); border:3px solid var(--line); border-radius:24px; padding:12px 18px; font-size:1rem; line-height:1.6; margin:8px 0 14px;}
+  #start-btn{font-size:1.25rem; padding:16px 44px; background:var(--daidai);}
+  .home-foot{clear:both; overflow:hidden; padding-top:10px;}
+  .home-foot #grown-btn{float:right;}
+
+  /* ふうせん いき */
+  .breath{text-align:center;}
+  .breath .bubble{display:inline-block; font-size:0.83rem; margin:4px 0 8px;}
+  .ball-wrap{height:330px; position:relative;}
+  .ball{position:absolute; left:50%; top:50%; width:300px; height:300px; margin:-150px 0 0 -150px; border-radius:50%; background:var(--momo); border:6px solid var(--daidai);
+    -webkit-transform:scale(0.35); transform:scale(0.35); -webkit-transition:-webkit-transform 4s ease-in-out; transition:transform 4s ease-in-out;}
+  .ball.big{-webkit-transform:scale(1); transform:scale(1);}
+  .ball-say{position:absolute; left:0; right:0; top:44%; font-size:1.5rem; font-weight:bold; color:var(--ink);}
+  .breath-foot button{margin:0 8px;}
+
+  /* クイズ */
+  .bar{overflow:hidden; font-size:0.75rem; color:var(--ink-soft); margin-bottom:6px;}
+  .bar #play-back{float:left; margin-right:12px;}
+  .bar .stars{float:right; font-size:1rem; letter-spacing:2px; color:var(--ki); margin-top:4px;}
+  .bar .stars .off{color:var(--line);}
+  .bar #play-title{display:inline-block; margin-top:8px; font-weight:bold; color:var(--ink);}
+  .qbox{background:var(--card); border:3px solid var(--line); border-radius:18px; padding:10px; text-align:center;}
+  .qbox img{margin:0 auto 6px; max-height:300px; width:auto;}
+  .qbox img.tiny{max-height:110px;}
+  .qtext{font-size:1.04rem; font-weight:bold; line-height:1.45; word-break:keep-all;}
+  .choice{display:block; width:100%; margin:0 0 16px; text-align:left; background:var(--card); color:var(--ink); border:4px solid var(--line); border-radius:18px; padding:18px 18px; font-size:1rem; line-height:1.4; min-height:110px;}
+  .choice .mark{display:block; font-size:0.67rem; font-weight:bold; min-height:1.2em;}
+  .choice.right{border-color:var(--ao); background:var(--ao-bg);}
+  .choice.right .mark{color:var(--ao);}
+  .choice.wrong{border-color:var(--daidai); background:var(--daidai-bg);}
+  .choice.wrong .mark{color:var(--daidai-ink);}
+  .msg{font-size:0.92rem; font-weight:bold; min-height:1.5em; margin:4px 0; text-align:center;}
+  .msg.good{color:var(--ao);} .msg.warn{color:var(--daidai-ink);}
+  .reveal{background:var(--card); border:3px solid var(--ao); border-radius:18px; padding:8px; text-align:center;
+    opacity:0; -webkit-transition:opacity 0.6s; transition:opacity 0.6s;}
+  .reveal.show{opacity:1;}
+  .pic{position:relative; margin:0 auto; max-width:100%;}
+  .pic img{width:100%;}
+  .ring{position:absolute; border:5px solid var(--daidai); border-radius:50%; -webkit-animation:pulse 1.2s ease-in-out infinite; animation:pulse 1.2s ease-in-out infinite;}
+  @-webkit-keyframes pulse{0%{-webkit-transform:scale(1.0);}50%{-webkit-transform:scale(1.15);}100%{-webkit-transform:scale(1.0);}}
+  @keyframes pulse{0%{transform:scale(1.0);}50%{transform:scale(1.15);}100%{transform:scale(1.0);}}
+  .yaku{font-size:1rem; font-weight:bold; color:var(--ao); margin:6px 0 2px; line-height:1.4;}
+  .tip{font-size:0.75rem; color:var(--ink-soft); margin:2px 0;}
+  .card2{overflow:hidden; text-align:left;}
+  .card2 .half{float:left; width:48%; margin:1%; border:3px solid var(--line); border-radius:14px; padding:8px 10px; font-size:0.75rem; line-height:1.5;}
+  .card2 .half b{display:block; font-size:0.83rem;}
+  .card2 .quiet{border-color:var(--ao);} .card2 .talk{border-color:var(--daidai);}
+  #next-btn{font-size:1.04rem; padding:12px 40px; margin-top:6px;}
+
+  /* 3つの ことば */
+  .magic{display:block; width:100%; margin:0 0 12px; text-align:left; background:var(--card); color:var(--ink); border:4px dashed var(--line); border-radius:18px; padding:12px 18px; min-height:96px;}
+  .magic b{display:block; font-size:1.08rem;}
+  .magic span{display:block; font-size:0.67rem; color:var(--ink-soft);}
+  .magic.open{border-style:solid; border-color:var(--ao); background:var(--ao-bg);}
+  .magic .num{float:left; font-size:1.5rem; font-weight:bold; color:var(--daidai); margin-right:14px; line-height:1.6;}
+
+  /* さいご */
+  .fin-l{float:left; width:38%; text-align:center;}
+  .fin-l img{margin:0 auto; max-height:420px; width:auto;}
+  .fin-r{float:right; width:60%;}
+  .omamori{font-size:1.25rem; letter-spacing:3px; color:var(--ki);}
+
+  /* おとなのひと */
+  .grown{background:var(--card); border:2px solid var(--line); border-radius:16px; padding:10px 14px; font-size:0.58rem; line-height:1.45;}
+  .grown label{display:block; margin-top:4px;}
+  .grown select,.grown input{font-size:0.67rem; padding:4px; border:1px solid var(--line); border-radius:8px; width:100%; color:var(--ink); background:var(--card);}
+  .grown h3{margin:4px 0; font-size:0.67rem;}
+  .grown ul{margin:2px 0; padding-left:1.2em;}
+  .grown li{margin:1px 0;}
+  .grown-l{float:left; width:40%;} .grown-r{float:right; width:57%;}
+  .head{overflow:hidden;} .head h1{float:left;} .head .right{float:right; margin-top:8px;}
+
+  @media (max-width:760px){
+    .col-l,.col-r,.home-l,.home-r,.fin-l,.fin-r,.grown-l,.grown-r{float:none; width:100%;}
+  }
+</style>
+<script>
+<!--IMG_JS-->
+</script>
+</head>
+<body>
+
+<!-- ===== はじめ ===== -->
+<div id="scr-home" class="screen">
+  <div class="home-l"><img id="home-img" alt=""></div>
+  <div class="home-r">
+    <h1>こころの じゅんび</h1>
+    <div class="bubble">きょうは とくべつの ひ。<br>どんな ことに ちゅうい したら いいかな？<br>トイくんと いっしょに たしかめよう。</div>
+    <p><button id="start-btn">はじめる</button></p>
+    <p id="home-len" class="note"></p>
+  </div>
+  <div class="home-foot">
+    <span id="home-ver" class="note"></span>
+    <button id="grown-btn" class="sub small">おとなのひと（ながおし）</button>
+  </div>
+</div>
+
+<!-- ===== ふうせん いき ===== -->
+<div id="scr-breath" class="screen breath" style="display:none">
+  <div class="bubble">ドキドキ しても だいじょうぶ。ドキドキは からだが「がんばるぞ」の じゅんびを して いる しるし。<br>ふうせん いきを 3かい しよう。</div>
+  <div class="ball-wrap"><div id="ball" class="ball"></div><div id="ball-say" class="ball-say"></div></div>
+  <div class="breath-foot"><button id="breath-skip" class="sub small">とばす</button><button id="breath-next" style="display:none">クイズへ</button></div>
+</div>
+
+<!-- ===== クイズ ===== -->
+<div id="scr-play" class="screen" style="display:none">
+  <div class="bar">
+    <button id="play-back" class="sub small">やめる</button>
+    <span id="play-title"></span>
+    <span id="play-stars" class="stars"></span>
+  </div>
+  <div class="col-l">
+    <div class="qbox">
+      <img id="q-img" alt="">
+      <div id="q-text" class="qtext"></div>
+    </div>
+    <div id="msg" class="msg"></div>
+  </div>
+  <div class="col-r">
+    <div id="choices"></div>
+    <div id="reveal" class="reveal" style="display:none">
+      <div id="rv-pic" class="pic"><img id="rv-img" alt=""><div id="rv-ring" class="ring"></div></div>
+      <div id="rv-card" class="card2" style="display:none"></div>
+      <div id="rv-yaku" class="yaku"></div>
+      <div id="rv-tip" class="tip"></div>
+      <button id="next-btn">つぎへ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 3つの ことば ===== -->
+<div id="scr-magic" class="screen" style="display:none">
+  <div class="col-l">
+    <div class="bubble">さいごに、だいじな ことばを 3つ おもいだそう。<br>なんだった かな？ いって から さわってね。</div>
+    <p class="note">ぜんぶ ひらいたら つぎへ</p>
+    <button id="magic-next" style="display:none">つぎへ</button>
+  </div>
+  <div id="magic-list" class="col-r"></div>
+</div>
+
+<!-- ===== さいご ===== -->
+<div id="scr-final" class="screen" style="display:none">
+  <div class="fin-l"><img id="fin-img" alt=""></div>
+  <div class="fin-r">
+    <h1 id="fin-title"></h1>
+    <div class="omamori" id="fin-stars"></div>
+    <div class="bubble" id="fin-msg"></div>
+    <p id="fin-hug" class="note"></p>
+    <button id="fin-home">おしまい</button>
+  </div>
+</div>
+
+<!-- ===== おとなのひと（漢字を使ってよい画面） ===== -->
+<div id="scr-grown" class="screen" style="display:none">
+  <div class="head"><h1>おとなのひと</h1><button id="grown-back" class="sub small right">もどる</button></div>
+  <div class="grown"><div class="grown-l">
+    <label>呼び方（最後の画面と「かえりみち」に入る）<select id="grown-yobi"></select></label>
+    <label>なまえ（ひらがな・8もじまで・空でもよい）<input id="grown-name" type="text" maxlength="8"></label>
+    <label>長さ <select id="grown-len"><option value="full">10問（約5分）</option><option value="short">5問（約3分）</option></select></label>
+    <label>音 <select id="grown-snd"><option value="on">あり</option><option value="off">なし</option></select></label>
+    <p class="note">音が出ないときは、iPad の音量と消音（ミュート）スイッチを確かめてください。</p>
+    <p><button id="grown-save" class="small">保存してもどる</button></p>
+    <p id="grown-ver" class="note"></p>
+  </div><div class="grown-r">
+    <h3>5分の使い方（大人の声かけ）</h3>
+    <ul>
+      <li>問いは大人が読み、子どもに先に答えさせる（思い出す練習になる）。「どうしてそう思った？」と理由も聞く</li>
+      <li>間違えても叱らない。「おしい、トイくんはこっちだったね」で次へ</li>
+      <li>今日はこれ以上の注意を足さない。覚えるのは最後の3つの言葉だけ</li>
+      <li>大人が落ち着いた顔と声でいる。子どもは大人の表情を手がかりに安心する</li>
+      <li>最後は抱きしめて「どんな時も大好き」。結果の話（合格・点数）はしない</li>
+    </ul>
+    <h3>この画面のもと</h3>
+    <ul>
+      <li>元資料＝「お子さんの為の入試の心構え」（レインボー先生）。挿絵は使用許諾済み</li>
+      <li>「〜したらダメ」は「〜しよう」の形に言い換えた（否定形より、するべき行動の方が幼児に伝わりやすい）</li>
+      <li>「話しかけられても相手にしない」は、静かにする場面に限った。みんなで遊ぶ課題では仲良く話してよいと分けた</li>
+    </ul>
+  </div></div>
+</div>
+
+<script>
+<!--APP_JS-->
+</script>
+<script>
+<!--UI_JS-->
+</script>
+</body>
+</html>
