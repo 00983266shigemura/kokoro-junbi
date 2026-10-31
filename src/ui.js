@@ -255,6 +255,8 @@
     on('breath-skip', startQuiz);
     on('breath-next', startQuiz);
     on('play-back', function () { renderHome(); show('home'); });
+    on('breath-back', function () { renderHome(); show('home'); });
+    on('magic-back', function () { renderHome(); show('home'); });
     on('next-btn', onNext);
     on('magic-next', startFinal);
     on('fin-home', function () { renderHome(); show('home'); });

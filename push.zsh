@@ -118,9 +118,11 @@ for i in $(seq 1 "$TRIES"); do
   sleep "$WAIT"
 done
 [[ "$LIVE" == "$LOCAL_MD5" ]] || stop "本番の index.html（${LIVE}）が手元（${LOCAL_MD5}）と一致しません。配信にもう少し時間がかかっている可能性があります＝CCが確認します"
-ICON="$("$CURL" -s -o /dev/null -w '%{http_code}' "${PAGES_URL}icon.png?check=${RUN_ID}")"
-[[ "$ICON" == "200" ]] || stop "本番に icon.png がありません（${ICON}）"
-print "✓ 本番 index.html md5=${LIVE}（手元と一致）・icon.png=200"
+# アイコンも 中身で 照合する（あるだけでは 古い絵・壊れた絵でも 通ってしまう）
+LOCAL_ICON="$(/sbin/md5 -q "${REPO_DIR}/icon.png")"
+LIVE_ICON="$("$CURL" -s -f "${PAGES_URL}icon.png?check=${RUN_ID}" | /sbin/md5 -q)"
+[[ "$LIVE_ICON" == "$LOCAL_ICON" ]] || stop "本番の icon.png（${LIVE_ICON}）が手元（${LOCAL_ICON}）と一致しません"
+print "✓ 本番 index.html md5=${LIVE}・icon.png md5=${LIVE_ICON}（どちらも手元と一致）"
 print ""
 print "iPad で開く場所＝ ${PAGES_URL}"
 print "== 完了：合格（残りの確認はCCが行います） =="

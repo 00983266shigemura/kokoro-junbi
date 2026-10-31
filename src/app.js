@@ -2,7 +2,7 @@
    受験の 当日の あさ、こどもと おうちの ひとが いっしょに 5ふん で たしかめる クイズ。
    ・古い Safari で動く書き方だけ（var と function。let/const/アロー/テンプレート文字列は使わない）
    ・子どもの画面の ことばは ひらがな・カタカナ・すうじ だけ（tools/check_kana.py が見る）
-   ・もとの 資料＝「お子さんの為の 入試の心構え」（挿絵は 許諾ずみ・しげ 2026-11-01）。p は その ページ
+   ・もとの 資料＝「お子さんの為の 入試の心構え」（レインボー先生）。挿絵も ここから。p は その ページ
    ・まちがいの 選択肢は もとの 資料の ふきだし（ついやって しまう こと）から とる＝lure に ページと ことばを のこす */
 (function (global) {
   'use strict';
@@ -62,7 +62,7 @@
       q: 'えを かく じかん。はやく かけたら どう する？',
       ok: 'じかん いっぱい、もっと ていねいに かく',
       ng: '「できました！」と おおきな こえで いう', lure: 'p7 できました ぼくが いちばん',
-      yaku: 'じかん いっぱい ていねいに。となりの えは みない', tip: '',
+      yaku: 'じかん いっぱい ていねいに。じぶんの えを みて かく', tip: '',
       reveal: 'r07', ring: [320, 230, 150, 175], core: false },
     { id: 'toire', p: 8, title: 'トイレ', stem: 's08',
       q: 'トイレが すんだら、どう する？',
@@ -103,6 +103,16 @@
   KJ.BAN_WORDS = ['てんさい', 'あたまが いい', 'いちばん えらい', 'ごうかく', 'ぜったい'];
   KJ.OSHII = 'おしい！ もう いちど かんがえて みよう';
   KJ.OSHII2 = 'トイくんは こっちを えらんだよ';
+
+  /* やくそく の 否定形さがし＝「ない」を 既定で こばみ、ゆるす 言いかたは 下の 一覧だけ（列挙で 否定語を さがす と もれる） */
+  KJ.NEG_OK = ['きに しない', 'わからない'];
+  KJ.negHits = function (text) {
+    var t = String(text), i, hits = 0;
+    for (i = 0; i < KJ.NEG_OK.length; i++) { t = t.split(KJ.NEG_OK[i]).join(''); }
+    if (t.indexOf('ない') >= 0) { hits++; }
+    if (t.indexOf('だめ') >= 0 || t.indexOf('ダメ') >= 0) { hits++; }
+    return hits;
+  };
 
   KJ.fill = function (text, yobikata) { return String(text).split('{y}').join(yobikata || KJ.YOBIKATA[0]); };
 
@@ -208,8 +218,9 @@
       ok(s.q && s.ok && s.ng && s.yaku, s.id + ' といかけ・こたえ・やくそく が ある');
       ok(s.ok !== s.ng, s.id + ' ok と ng が ちがう');
       ok(typeof s.lure === 'string' && /^p\d+ /.test(s.lure) && s.lure.indexOf('p' + s.p + ' ') === 0, s.id + ' まちがいの 出どころ（ページ）が ある');
-      ok(s.yaku.indexOf('しない') < 0 || s.yaku.indexOf('きに しない') >= 0, s.id + ' やくそく は「〜する」の かたち');
-      ok(s.yaku.indexOf('だめ') < 0 && s.yaku.indexOf('ダメ') < 0, s.id + ' やくそく に だめ を つかわない');
+      ok(KJ.negHits(s.yaku) === 0, s.id + ' やくそく は「〜する」の かたち（否定形なし）: ' + s.yaku);
+      ok(KJ.negHits(s.tip) === 0, s.id + ' ひとこと も 否定形なし: ' + s.tip);
+      ok(KJ.negHits(s.ok) === 0, s.id + ' ただしい こうどう も 否定形なし: ' + s.ok);
       ok(!!(global.KJ_IMG && global.KJ_IMG[s.stem]) || !global.KJ_IMG, s.id + ' もんだいの 絵が ある');
       ok(s.reveal === 'card' || !!(global.KJ_IMG && global.KJ_IMG[s.reveal]) || !global.KJ_IMG, s.id + ' こたえの 絵が ある');
       ok(s.reveal === 'card' || (s.ring && s.ring.length === 4 && s.ring[0] + s.ring[2] <= 1178 && s.ring[1] + s.ring[3] <= 842), s.id + ' トイくんの わくが 絵の 中');
@@ -222,6 +233,12 @@
     for (i = 0; i < KJ.MAGIC.length; i++) { w.push(KJ.MAGIC[i].w, KJ.MAGIC[i].sub); }
     for (i = 0; i < w.length; i++) { for (j = 0; j < KJ.BAN_WORDS.length; j++) { ok(String(w[i]).indexOf(KJ.BAN_WORDS[j]) < 0, 'つかわない ことば「' + KJ.BAN_WORDS[j] + '」が ない: ' + w[i]); } }
     ok(KJ.MAGIC.length === 3, 'おぼえる ことばは 3つ');
+    for (i = 0; i < KJ.MAGIC.length; i++) { ok(KJ.negHits(KJ.MAGIC[i].w) === 0, 'おぼえる ことば も 否定形なし: ' + KJ.MAGIC[i].w); }
+    /* 否定形さがし が 効くか（見本を まぜて 落ちること） */
+    ok(KJ.negHits('となりの えは みない') === 1, '見本「みない」を 見つける');
+    ok(KJ.negHits('おしゃべり しないで') === 1, '見本「しないで」を 見つける');
+    ok(KJ.negHits('はしったら だめ') === 1, '見本「だめ」を 見つける');
+    ok(KJ.negHits('おともだちが ちがっても きに しない') === 0, 'ゆるす 言いかた「きに しない」は とおす');
     /* よびかた の さしかえ */
     ok(KJ.fill('{y}に あう', 'パパ') === 'パパに あう', 'よびかた が はいる');
     ok(KJ.fill(SCENES[9].ok, '') .indexOf('{y}') < 0, 'よびかた が からでも {y} が のこらない');
