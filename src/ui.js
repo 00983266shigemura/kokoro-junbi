@@ -65,7 +65,7 @@
 
   /* ================= クイズ ================= */
   function startQuiz() {
-    G = { scenes: KJ.pickScenes(!!S.shortMode), idx: 0, tries: 0, done: false, stars: 0, order: [] };
+    G = { scenes: KJ.pickScenes(!!S.shortMode), idx: 0, tries: 0, done: false, stars: 0, order: [], got: [false, false, false] };
     show('play');
     renderScene();
   }
@@ -73,10 +73,14 @@
     var h = '', i;
     for (i = 0; i < G.scenes.length; i++) { h += (i < G.stars) ? '<span>★</span>' : '<span class="off">★</span>'; }
     el('play-stars').innerHTML = h;
+    h = '';
+    for (i = 0; i < KJ.MAGIC.length; i++) { h += '<span class="' + (G.got[i] ? 'on' : '') + '">' + (i + 1) + '</span>'; }
+    el('play-kotoba').innerHTML = 'ことば ' + h;
   }
   function renderScene() {
     var sc = G.scenes[G.idx], box = el('choices'), okFirst = KJ.okFirst(), opts, i, b, qi = el('q-img');
     G.tries = 0; G.done = false;
+    el('scr-play').className = 'screen';
     setText(el('play-title'), (G.idx + 1) + '／' + G.scenes.length + '　' + sc.title);
     paintStars();
     setImg(qi, sc.stem);
@@ -118,9 +122,39 @@
       KJ.snd.play('oshii');
     }
   }
+  /* こたえの 絵の はば＝画面の たかさに あわせて できるだけ おおきく（絵は 1000×728） */
+  function sizePic() {
+    var pic = el('rv-pic'), zoom = el('scr-play').className.indexOf('zoom') >= 0, box = el('rv-l'), vw, vh, wmax, hmax;
+    if (!pic || pic.style.display === 'none') { return; }
+    vw = global.innerWidth || 1024; vh = global.innerHeight || 640;
+    wmax = zoom ? vw - 32 : (box.clientWidth || vw * 0.7);
+    hmax = zoom ? vh - 24 : vh - el('play-bar').offsetHeight - 40;
+    pic.style.width = Math.floor(Math.min(wmax, hmax * 1000 / 728)) + 'px';
+  }
+  function toggleZoom() {
+    var sp = el('scr-play');
+    if (screen !== 'play' || !G || !G.done || el('rv-pic').style.display === 'none') { return; }
+    sp.className = (sp.className.indexOf('zoom') >= 0) ? 'screen revealing' : 'screen revealing zoom';
+    sizePic();
+  }
+  function showMagic(sc) {
+    var box = el('rv-magic'), m = sc.magic, first;
+    if (!(m >= 0)) { box.style.display = 'none'; return false; }
+    first = !G.got[m];
+    G.got[m] = true;
+    setText(el('rv-magic-h'), 'だいじな ことば ' + (m + 1) + 'つめ');
+    setText(el('rv-magic-w'), KJ.MAGIC[m].w);
+    setText(el('rv-magic-say'), first ? 'こえに だして いって みよう' : 'もう いちど こえに だして みよう');
+    box.className = first ? 'kotoba new' : 'kotoba';
+    box.style.display = 'block';
+    paintStars();
+    return first;
+  }
   function showReveal() {
     var sc = G.scenes[G.idx], rv = el('reveal'), ring = el('rv-ring'), card = el('rv-card'), r, h;
     el('choices').style.display = 'none';
+    el('scr-play').className = 'screen revealing';
+    setText(el('rv-msg'), el('msg').textContent);
     if (sc.reveal === 'card') {
       el('rv-pic').style.display = 'none';
       h = '<div class="half quiet"><b></b><ul></ul></div><div class="half talk"><b></b><ul></ul></div>';
@@ -142,8 +176,11 @@
     setText(el('rv-yaku'), KJ.fill(sc.yaku, yobi()));
     setText(el('rv-tip'), sc.tip ? KJ.fill(sc.tip, yobi()) : '');
     el('rv-tip').style.display = sc.tip ? 'block' : 'none';
+    el('rv-zoom').style.display = (sc.reveal === 'card') ? 'none' : 'block';
+    if (showMagic(sc)) { later(function () { KJ.snd.play('magic'); }, 300); }
     setText(el('next-btn'), G.idx + 1 < G.scenes.length ? 'つぎへ' : 'さいごの 3つへ');
     rv.style.display = 'block';
+    sizePic();
     later(function () { rv.className = 'reveal show'; }, 30);
   }
   function fillHalf(div, data) {
@@ -163,6 +200,7 @@
     show('magic');
     list.innerHTML = '';
     G.opened = 0;
+    el('scr-play').className = 'screen';
     for (i = 0; i < KJ.MAGIC.length; i++) {
       b = doc.createElement('button');
       b.className = 'magic'; b.setAttribute('data-m', String(i));
@@ -258,6 +296,16 @@
     on('breath-back', function () { renderHome(); show('home'); });
     on('magic-back', function () { renderHome(); show('home'); });
     on('next-btn', onNext);
+    on('rv-pic', toggleZoom);
+    on('rv-zoom', toggleZoom);
+    on('grown-snd-test', function () {
+      var was = KJ.snd.on;
+      KJ.snd.on = true; KJ.snd.unlock();
+      setText(el('grown-snd-res'), KJ.snd.play('finale') ? 'ならしました' : 'おとの しくみが つくれません');
+      KJ.snd.on = was;
+    });
+    global.addEventListener('resize', sizePic, false);
+    doc.addEventListener('visibilitychange', function () { if (doc.hidden && KJ.snd.keep) { try { KJ.snd.keep.pause(); } catch (e) { /* つぎの タッチで もどる */ } } }, false);
     on('magic-next', startFinal);
     on('fin-home', function () { renderHome(); show('home'); });
     el('choices').addEventListener('click', function (ev) {
@@ -279,6 +327,7 @@
       S.shortMode = el('grown-len').value === 'short';
       S.sound = el('grown-snd').value !== 'off';
       KJ.snd.on = S.sound;
+      if (!S.sound && KJ.snd.keep) { try { KJ.snd.keep.pause(); } catch (e) { /* つぎに */ } }
       KJ.saveState(S); renderHome(); show('home');
     });
     KJ.snd.on = (S.sound !== false);
@@ -290,7 +339,7 @@
     show('home');
   }
   /* 試験用＝画面を 直接 うごかす 入口 */
-  KJ.ui = { startQuiz: startQuiz, showReveal: function () { clearTimers(); showReveal(); }, startBreath: startBreath, onChoice: onChoice, onNext: onNext, openMagic: openMagic, startFinal: startFinal,
+  KJ.ui = { startQuiz: startQuiz, showReveal: function () { clearTimers(); showReveal(); }, toggleZoom: toggleZoom, startBreath: startBreath, onChoice: onChoice, onNext: onNext, openMagic: openMagic, startFinal: startFinal,
     round: function () { return G; }, state: function () { return S; }, flush: function () { var t = timers.slice(0); return t.length; } };
 
   if (doc.readyState === 'loading') { doc.addEventListener('DOMContentLoaded', init, false); } else { init(); }

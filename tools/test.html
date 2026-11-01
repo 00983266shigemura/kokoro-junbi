@@ -17,6 +17,7 @@
   (function () {
     function blocked() { window.__audioAsked++; throw new Error('自己点検では音を出せません'); }
     window.AudioContext = blocked; window.webkitAudioContext = blocked; window.OfflineAudioContext = blocked; window.Audio = blocked;
+    try { window.HTMLMediaElement.prototype.play = blocked; } catch (e) {}
     try { Object.defineProperty(window, 'speechSynthesis', { value: { speak: blocked, cancel: function () {} }, configurable: true }); } catch (e) {}
   })();
   window.__loadErrors = [];

@@ -94,6 +94,31 @@
   .card2 .half b{display:block; font-size:0.92rem;}
   .card2 .quiet{border-color:var(--ao);} .card2 .talk{border-color:var(--daidai);}
   #next-btn{font-size:1.04rem; padding:12px 40px; margin-top:6px;}
+  .bar .kotoba-got{float:right; margin:6px 14px 0 0; font-weight:bold; color:var(--ink-soft);}
+  .bar .kotoba-got span{display:inline-block; width:1.3em; height:1.3em; line-height:1.2em; text-align:center; margin-left:4px; border:2px dashed var(--line); border-radius:50%; color:var(--ink-soft);}
+  .bar .kotoba-got span.on{border:2px solid var(--ao); background:var(--ao); color:var(--on-accent);}
+  /* こたえの 画面＝もんだいを けして、絵を できるだけ おおきく（はばは ui.js の sizePic が きめる） */
+  .revealing .col-l,.revealing #choices{display:none;}
+  .revealing .col-r{float:none; width:100%;}
+  .revealing .reveal{overflow:hidden; text-align:left; padding:8px;}
+  .rv-l{float:left; width:74%;}
+  .rv-r{float:right; width:25%; text-align:center;}
+  .rv-r .msg{margin:0 0 4px; font-size:0.75rem; word-break:keep-all;}
+  .rv-r .yaku{font-size:0.92rem; margin:4px 0;}
+  .rv-r .tip{word-break:keep-all; font-size:0.67rem;}
+  .rv-r #next-btn{padding:10px 30px; margin-top:4px;}
+  .rv-zoom{font-size:0.58rem; color:var(--ink-soft); margin:4px 0;}
+  .kotoba{border:4px solid var(--daidai); background:var(--daidai-bg); border-radius:16px; padding:6px 8px; margin:0 0 6px; word-break:keep-all;}
+  .kotoba .kh{display:block; font-size:0.62rem; font-weight:bold; color:var(--daidai-ink);}
+  .kotoba b{display:block; font-size:0.92rem; line-height:1.35; color:var(--ink);}
+  .kotoba .ks{display:block; font-size:0.58rem; color:var(--ink-soft);}
+  .kotoba.new{-webkit-animation:pop 0.6s ease-out 1; animation:pop 0.6s ease-out 1;}
+  @-webkit-keyframes pop{0%{-webkit-transform:scale(0.6);}70%{-webkit-transform:scale(1.08);}100%{-webkit-transform:scale(1);}}
+  @keyframes pop{0%{transform:scale(0.6);}70%{transform:scale(1.08);}100%{transform:scale(1);}}
+  /* 絵だけを 画面いっぱいに（絵を さわると きりかわる） */
+  .zoom .bar,.zoom .rv-r{display:none;}
+  .zoom .rv-l{float:none; width:100%;}
+  .zoom .reveal{border:0; padding:0;}
 
   /* 3つの ことば */
   .magic{display:block; width:100%; margin:0 0 12px; text-align:left; background:var(--card); color:var(--ink); border:4px dashed var(--line); border-radius:18px; padding:12px 18px; min-height:96px;}
@@ -172,10 +197,11 @@ window.KJ_IMG = {
 
 <!-- ===== クイズ ===== -->
 <div id="scr-play" class="screen" style="display:none">
-  <div class="bar">
+  <div class="bar" id="play-bar">
     <button id="play-back" class="sub small">やめる</button>
     <span id="play-title"></span>
     <span id="play-stars" class="stars"></span>
+    <span id="play-kotoba" class="kotoba-got"></span>
   </div>
   <div class="col-l">
     <div class="qbox">
@@ -187,11 +213,18 @@ window.KJ_IMG = {
   <div class="col-r">
     <div id="choices"></div>
     <div id="reveal" class="reveal" style="display:none">
-      <div id="rv-pic" class="pic"><img id="rv-img" alt=""><div id="rv-ring" class="ring"></div></div>
-      <div id="rv-card" class="card2" style="display:none"></div>
-      <div id="rv-yaku" class="yaku"></div>
-      <div id="rv-tip" class="tip"></div>
-      <button id="next-btn">つぎへ</button>
+      <div id="rv-l" class="rv-l">
+        <div id="rv-pic" class="pic"><img id="rv-img" alt=""><div id="rv-ring" class="ring"></div></div>
+        <div id="rv-card" class="card2" style="display:none"></div>
+      </div>
+      <div class="rv-r">
+        <div id="rv-msg" class="msg good"></div>
+        <div id="rv-magic" class="kotoba" style="display:none"><span id="rv-magic-h" class="kh"></span><b id="rv-magic-w"></b><span id="rv-magic-say" class="ks"></span></div>
+        <div id="rv-yaku" class="yaku"></div>
+        <div id="rv-tip" class="tip"></div>
+        <div id="rv-zoom" class="rv-zoom">えを さわると もっと おおきく なるよ</div>
+        <button id="next-btn">つぎへ</button>
+      </div>
     </div>
   </div>
 </div>
@@ -199,7 +232,7 @@ window.KJ_IMG = {
 <!-- ===== 3つの ことば ===== -->
 <div id="scr-magic" class="screen" style="display:none">
   <div class="col-l">
-    <div class="bubble">さいごに、だいじな ことばを 3つ おもいだそう。<br>なんだった かな？ いって から さわってね。</div>
+    <div class="bubble">とちゅうで でて きた だいじな ことば 3つ、おもいだせる かな？<br>いって から さわってね。</div>
     <p class="note">ぜんぶ ひらいたら つぎへ</p>
     <button id="magic-back" class="sub small">やめる</button> <button id="magic-next" style="display:none">つぎへ</button>
   </div>
@@ -226,7 +259,8 @@ window.KJ_IMG = {
     <label>なまえ（ひらがな・8もじまで・空でもよい）<input id="grown-name" type="text" maxlength="8"></label>
     <label>長さ <select id="grown-len"><option value="full">10問（約5分）</option><option value="short">5問（約3分）</option></select></label>
     <label>音 <select id="grown-snd"><option value="on">あり</option><option value="off">なし</option></select></label>
-    <p class="note">音が出ないときは、iPad の音量と消音（ミュート）スイッチを確かめてください。</p>
+    <p><button id="grown-snd-test" class="small">音のためし</button> <span id="grown-snd-res" class="note"></span></p>
+    <p class="note">音が出ないときは、iPad の音量ボタンを上げ、横の消音スイッチとコントロールセンターの消音（ベルの印）を切ってください。</p>
     <p><button id="grown-save" class="small">保存してもどる</button></p>
     <p id="grown-ver" class="note"></p>
   </div><div class="grown-r">
@@ -234,7 +268,7 @@ window.KJ_IMG = {
     <ul>
       <li>問いは大人が読み、子どもに先に答えさせる（思い出す練習になる）。「どうしてそう思った？」と理由も聞く</li>
       <li>間違えても叱らない。「おしい、トイくんはこっちだったね」で次へ</li>
-      <li>今日はこれ以上の注意を足さない。覚えるのは最後の3つの言葉だけ</li>
+      <li>今日はこれ以上の注意を足さない。覚えるのは3つの言葉だけ（途中の場面で出たら、声に出して言わせる＝言うと覚えやすい）</li>
       <li>大人が落ち着いた顔と声でいる。子どもは大人の表情を手がかりに安心する</li>
       <li>最後は抱きしめて「どんな時も大好き」。結果の話（合格・点数）はしない</li>
     </ul>
@@ -243,6 +277,7 @@ window.KJ_IMG = {
       <li>元資料＝「お子さんの為の入試の心構え」（レインボー先生）。挿絵も同じ資料から</li>
       <li>「〜したらダメ」は「〜しよう」の形に言い換えた（否定形より、するべき行動の方が幼児に伝わりやすい）</li>
       <li>「話しかけられても相手にしない」は、静かにする場面に限った。みんなで遊ぶ課題では仲良く話してよいと分けた</li>
+      <li>答えの後の絵は、さわると画面いっぱいに大きくなる（吹き出しを一緒に読む）</li>
     </ul>
   </div></div>
 </div>
@@ -259,7 +294,7 @@ window.KJ_IMG = {
   var KJ = global.KJ || {};
   global.KJ = KJ;
 
-  KJ.APP_VERSION = 1;
+  KJ.APP_VERSION = 2;
   KJ.SCHEMA = 1;
   KJ.STORE_KEY = 'kokoro_junbi_v1';
 
@@ -270,72 +305,73 @@ window.KJ_IMG = {
      q＝といかけ／ok＝ただしい こうどう／ng＝ついやって しまう こと（lure＝もとの ふきだし）
      yaku＝やくそく（「〜しない」でなく「〜する」の かたちで いう）／tip＝ひとこと たす こと
      reveal＝こたえの あとに 出す 絵（ring＝トイくんの いる ところ・絵の 1262×892 の わくでの 四角）
-     core＝みじかい（5こ）の ときも 出す */
+     core＝みじかい（5こ）の ときも 出す
+     magic＝この ばめんで 出す だいじな ことば（KJ.MAGIC の ばんごう・-1＝なし）。とちゅうで 出して こえに だし、さいごに おもいだす */
   var SCENES = [
     { id: 'idou', p: 2, title: 'いどう', stem: 's02',
       q: 'いろいろな おへやに いどう するよ。どう する？',
       ok: 'まえの こに ついて しずかに あるく',
       ng: 'おともだちと おしゃべり しながら あるく', lure: 'p2 ゆびを さして おしゃべり して いる こ',
       yaku: 'ならぶ ときは まえを みて しずかに', tip: '',
-      reveal: 'r02', ring: [645, 465, 85, 200], core: false },
+      reveal: 'r02', ring: [645, 465, 85, 200], core: false, magic: -1 },
     { id: 'tomodachi', p: 1, title: 'おともだち', stem: 'toi',
       q: 'まって いる とき、おともだちが はなしかけて きたよ。どう する？',
       ok: 'にっこり して、せんせいの ほうを むく',
       ng: 'いっしょに おしゃべり する', lure: 'p1 はなしかけられても あいてに しない',
       yaku: 'しずかに する ときの おはなしは あとで', tip: '',
-      reveal: 'card', ring: null, core: false },
+      reveal: 'card', ring: null, core: false, magic: -1 },
     { id: 'ohanashi', p: 4, title: 'おはなし', stem: 's04',
       q: 'せんせいが たいせつな おはなしを するよ。どこを みる？',
       ok: 'せんせいの かおを みて きく',
       ng: 'うしろの おともだちを みる', lure: 'p4 うしろを むいたり ものを おとしたり して いる こ',
       yaku: 'おはなしは せんせいの かおを みて きく', tip: '',
-      reveal: 'r04', ring: [420, 435, 80, 70], core: true },
+      reveal: 'r04', ring: [420, 435, 80, 70], core: true, magic: 0 },
     { id: 'otehon', p: 3, title: 'おてほん', stem: 's03',
       q: 'せんせいが おてほんを みせるよ。どう する？',
       ok: 'せんせいの おてほんを よく みて おぼえる',
       ng: 'おともだちの まねを すれば いい', lure: 'p3 みんなの まね したら いいだけ',
       yaku: 'おてほんは せんせいを みる。おともだちが ちがっても きに しない', tip: 'あいずが あってから うごこう',
-      reveal: 'r03', ring: [700, 525, 70, 110], core: true },
+      reveal: 'r03', ring: [700, 525, 70, 110], core: true, magic: 0 },
     { id: 'hajime', p: 5, title: 'はじめ', stem: 's05',
       q: 'テストの はじまり。えんぴつは いつ もつ？',
       ok: '「はじめ」と いわれてから もつ',
       ng: 'しって いる もんだいだから すぐ かく', lure: 'p5 この もんだい しってる かんたんだね',
       yaku: 'えんぴつは「はじめ」で もつ。「やめ」で おく', tip: '',
-      reveal: 'r05', ring: [200, 495, 125, 110], core: true },
+      reveal: 'r05', ring: [200, 495, 125, 110], core: true, magic: 1 },
     { id: 'wakaranai', p: 6, title: 'わからない とき', stem: 's06',
       q: 'わからない もんだいが あったら、どう おもう？',
       ok: '「だいじょうぶ。つぎ！」と こころで いう',
       ng: '「もう だめだ」と おもう', lure: 'p6 おこられる もう いや',
       yaku: 'わからない もんだいが あっても だいじょうぶ。つぎを がんばる', tip: 'みんなにも むずかしい もんだいが あるよ',
-      reveal: 'r06', ring: [410, 290, 150, 165], core: true },
+      reveal: 'r06', ring: [410, 290, 150, 165], core: true, magic: 2 },
     { id: 'oekaki', p: 7, title: 'おえかき', stem: 'toi',
       q: 'えを かく じかん。はやく かけたら どう する？',
       ok: 'じかん いっぱい、もっと ていねいに かく',
       ng: '「できました！」と おおきな こえで いう', lure: 'p7 できました ぼくが いちばん',
       yaku: 'じかん いっぱい ていねいに。じぶんの えを みて かく', tip: '',
-      reveal: 'r07', ring: [320, 230, 150, 175], core: false },
+      reveal: 'r07', ring: [320, 230, 150, 175], core: false, magic: -1 },
     { id: 'toire', p: 8, title: 'トイレ', stem: 's08',
       q: 'トイレが すんだら、どう する？',
       ok: 'あるいて しずかに もどる',
       ng: 'はしって もどる', lure: 'p8 いそげ',
       yaku: 'トイレの あとは あるいて しずかに', tip: 'いきたく なったら、てを あげて せんせいに いって いいよ',
-      reveal: 'r08', ring: [555, 310, 90, 195], core: false },
+      reveal: 'r08', ring: [555, 310, 90, 195], core: false, magic: -1 },
     { id: 'dance', p: 9, title: 'おどる', stem: 's09',
       q: '「おんがくに あわせて おどって ください」。どう する？',
       ok: 'はずかしがらずに げんきに おどる',
       ng: 'はずかしいから じっと たって いる', lure: 'p9 もじもじ して いる こ',
       yaku: 'うごく ときは げんきに。ゆうきを だそう', tip: '',
-      reveal: 'r09', ring: [550, 325, 180, 320], core: false },
+      reveal: 'r09', ring: [550, 325, 180, 320], core: false, magic: -1 },
     { id: 'kaeri', p: 10, title: 'かえりみち', stem: 'toi',
       q: 'テストは いつ おわり？',
       ok: '{y}の ところに もどったら おわり',
       ng: 'もんだいが おわったら もう おわり', lure: 'p10 キック する こ・おおごえの こ',
       yaku: '{y}に あうまで ならんで しずかに', tip: '',
-      reveal: 'r10', ring: [530, 270, 90, 155], core: true }
+      reveal: 'r10', ring: [530, 270, 90, 155], core: true, magic: -1 }
   ];
   KJ.SCENES = SCENES;
 
-  /* さいごに おもいだす 3つの ことば（おぼえるのは これだけ） */
+  /* だいじな 3つの ことば（おぼえるのは これだけ）。とちゅうの ばめんで 出し（magic）、さいごに おもいだす */
   KJ.MAGIC = [
     { w: 'よく みる・よく きく', sub: 'せんせいの かおと おてほん' },
     { w: 'あいずを まつ', sub: '「はじめ」で もつ・「やめ」で おく' },
@@ -395,19 +431,38 @@ window.KJ_IMG = {
     ok: [['C5', 0, 0.14, 0.8, 'triangle'], ['E5', 0.1, 0.14, 0.8, 'triangle'], ['G5', 0.2, 0.28, 0.9, 'triangle']],
     oshii: [['E5', 0, 0.16, 0.5, 'sine'], ['C5', 0.16, 0.24, 0.5, 'sine']],
     star: [['C6', 0, 0.1, 0.5, 'sine'], ['E6', 0.08, 0.1, 0.5, 'sine'], ['G6', 0.16, 0.22, 0.55, 'sine']],
-    inhale: [['C4', 0, 0.5, 0.35, 'sine'], ['E4', 0.5, 0.5, 0.35, 'sine'], ['G4', 1.0, 0.8, 0.35, 'sine']],
-    exhale: [['G4', 0, 0.6, 0.3, 'sine'], ['E4', 0.6, 0.6, 0.3, 'sine'], ['C4', 1.2, 1.2, 0.3, 'sine']],
+    inhale: [['C5', 0, 0.5, 0.4, 'sine'], ['E5', 0.5, 0.5, 0.4, 'sine'], ['G5', 1.0, 0.8, 0.4, 'sine']],
+    exhale: [['G5', 0, 0.6, 0.35, 'sine'], ['E5', 0.6, 0.6, 0.35, 'sine'], ['C5', 1.2, 1.2, 0.35, 'sine']],
     magic: [['G5', 0, 0.12, 0.6, 'triangle'], ['C6', 0.12, 0.3, 0.7, 'triangle']],
     finale: [['C5', 0, 0.16, 0.8, 'triangle'], ['E5', 0.15, 0.16, 0.8, 'triangle'], ['G5', 0.3, 0.16, 0.8, 'triangle'],
       ['C6', 0.45, 0.5, 0.9, 'triangle'], ['G5', 0.45, 0.5, 0.5, 'sine'], ['E6', 0.75, 0.6, 0.6, 'sine']]
   };
   KJ.SOUNDS = SOUNDS;
-  var snd = { ctx: null, on: true, vol: 0.22 };
+  var snd = { ctx: null, on: true, vol: 0.32, keep: null };
   KJ.snd = snd;
   function audioClass() { return global.AudioContext || global.webkitAudioContext || null; }
-  /* さいしょの タッチで 音の しくみを おこす（iOS 10 は タッチの 中で ないと 鳴らない） */
+  /* 音の ない 短い WAV（8000Hz・16bit・0.25びょう）。消音スイッチ対策の ために ながしつづける */
+  function silentWav() {
+    var n = 2000, len = n * 2, h, i;
+    function u32(v) { return String.fromCharCode(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255); }
+    function u16(v) { return String.fromCharCode(v & 255, (v >> 8) & 255); }
+    h = 'RIFF' + u32(36 + len) + 'WAVE' + 'fmt ' + u32(16) + u16(1) + u16(1) + u32(8000) + u32(16000) + u16(2) + u16(16) + 'data' + u32(len);
+    for (i = 0; i < len; i++) { h += String.fromCharCode(0); }
+    return 'data:audio/wav;base64,' + global.btoa(h);
+  }
+  KJ.silentWav = silentWav;
+  /* さいしょの タッチで 音の しくみを おこす（iOS 10 は タッチの 中で ないと 鳴らない）。
+     iPad の 消音（よこの スイッチ・コントロールセンター）が 入って いると、合成の 音（Web Audio）だけ 消される。
+     音の ない audio を 1つ ながしつづけると、ページが「再生」あつかいに なり、合成の 音も 鳴る（推定・実機で 確かめる） */
   snd.unlock = function () {
-    var AC, b, src;
+    var AC, b, src, a;
+    try {
+      if (!snd.keep && global.Audio) {
+        a = new global.Audio(); a.src = silentWav(); a.loop = true;
+        snd.keep = a;
+      }
+      if (snd.keep && snd.on && snd.keep.paused) { snd.keep.play(); }
+    } catch (e0) { /* 鳴らなくても つかえる */ }
     try {
       if (!snd.ctx) {
         AC = audioClass(); if (!AC) { return false; }
@@ -483,6 +538,17 @@ window.KJ_IMG = {
     for (i = 0; i < KJ.MAGIC.length; i++) { w.push(KJ.MAGIC[i].w, KJ.MAGIC[i].sub); }
     for (i = 0; i < w.length; i++) { for (j = 0; j < KJ.BAN_WORDS.length; j++) { ok(String(w[i]).indexOf(KJ.BAN_WORDS[j]) < 0, 'つかわない ことば「' + KJ.BAN_WORDS[j] + '」が ない: ' + w[i]); } }
     ok(KJ.MAGIC.length === 3, 'おぼえる ことばは 3つ');
+    /* だいじな ことば が とちゅうで 3つとも 出る（10もん・5もん とも）＝さいごに おもいだす まえに 1かいは 見て こえに だす */
+    for (k = 0; k < 2; k++) {
+      n5 = KJ.pickScenes(k === 1); w = [0, 0, 0];
+      for (i = 0; i < n5.length; i++) {
+        ok(n5[i].magic === -1 || (n5[i].magic >= 0 && n5[i].magic < KJ.MAGIC.length), n5[i].id + ' magic の ばんごうが ある');
+        if (n5[i].magic >= 0) { w[n5[i].magic]++; }
+      }
+      for (j = 0; j < 3; j++) { ok(w[j] >= 1, (k === 1 ? 'みじかい' : '10もん') + ' で ことば ' + (j + 1) + ' が とちゅうで 出る（' + w[j] + 'かい）'); }
+      ok(n5[n5.length - 1].magic === -1, 'さいごの ばめんは ことばを 出さない（おもいだす まえに あいだを おく）');
+    }
+    ok(KJ.silentWav().indexOf('data:audio/wav;base64,UklGR') === 0, '音の ない WAV が つくれる');
     for (i = 0; i < KJ.MAGIC.length; i++) { ok(KJ.negHits(KJ.MAGIC[i].w) === 0, 'おぼえる ことば も 否定形なし: ' + KJ.MAGIC[i].w); }
     /* 否定形さがし が 効くか（見本を まぜて 落ちること） */
     ok(KJ.negHits('となりの えは みない') === 1, '見本「みない」を 見つける');
@@ -579,7 +645,7 @@ window.KJ_IMG = {
 
   /* ================= クイズ ================= */
   function startQuiz() {
-    G = { scenes: KJ.pickScenes(!!S.shortMode), idx: 0, tries: 0, done: false, stars: 0, order: [] };
+    G = { scenes: KJ.pickScenes(!!S.shortMode), idx: 0, tries: 0, done: false, stars: 0, order: [], got: [false, false, false] };
     show('play');
     renderScene();
   }
@@ -587,10 +653,14 @@ window.KJ_IMG = {
     var h = '', i;
     for (i = 0; i < G.scenes.length; i++) { h += (i < G.stars) ? '<span>★</span>' : '<span class="off">★</span>'; }
     el('play-stars').innerHTML = h;
+    h = '';
+    for (i = 0; i < KJ.MAGIC.length; i++) { h += '<span class="' + (G.got[i] ? 'on' : '') + '">' + (i + 1) + '</span>'; }
+    el('play-kotoba').innerHTML = 'ことば ' + h;
   }
   function renderScene() {
     var sc = G.scenes[G.idx], box = el('choices'), okFirst = KJ.okFirst(), opts, i, b, qi = el('q-img');
     G.tries = 0; G.done = false;
+    el('scr-play').className = 'screen';
     setText(el('play-title'), (G.idx + 1) + '／' + G.scenes.length + '　' + sc.title);
     paintStars();
     setImg(qi, sc.stem);
@@ -632,9 +702,39 @@ window.KJ_IMG = {
       KJ.snd.play('oshii');
     }
   }
+  /* こたえの 絵の はば＝画面の たかさに あわせて できるだけ おおきく（絵は 1000×728） */
+  function sizePic() {
+    var pic = el('rv-pic'), zoom = el('scr-play').className.indexOf('zoom') >= 0, box = el('rv-l'), vw, vh, wmax, hmax;
+    if (!pic || pic.style.display === 'none') { return; }
+    vw = global.innerWidth || 1024; vh = global.innerHeight || 640;
+    wmax = zoom ? vw - 32 : (box.clientWidth || vw * 0.7);
+    hmax = zoom ? vh - 24 : vh - el('play-bar').offsetHeight - 40;
+    pic.style.width = Math.floor(Math.min(wmax, hmax * 1000 / 728)) + 'px';
+  }
+  function toggleZoom() {
+    var sp = el('scr-play');
+    if (screen !== 'play' || !G || !G.done || el('rv-pic').style.display === 'none') { return; }
+    sp.className = (sp.className.indexOf('zoom') >= 0) ? 'screen revealing' : 'screen revealing zoom';
+    sizePic();
+  }
+  function showMagic(sc) {
+    var box = el('rv-magic'), m = sc.magic, first;
+    if (!(m >= 0)) { box.style.display = 'none'; return false; }
+    first = !G.got[m];
+    G.got[m] = true;
+    setText(el('rv-magic-h'), 'だいじな ことば ' + (m + 1) + 'つめ');
+    setText(el('rv-magic-w'), KJ.MAGIC[m].w);
+    setText(el('rv-magic-say'), first ? 'こえに だして いって みよう' : 'もう いちど こえに だして みよう');
+    box.className = first ? 'kotoba new' : 'kotoba';
+    box.style.display = 'block';
+    paintStars();
+    return first;
+  }
   function showReveal() {
     var sc = G.scenes[G.idx], rv = el('reveal'), ring = el('rv-ring'), card = el('rv-card'), r, h;
     el('choices').style.display = 'none';
+    el('scr-play').className = 'screen revealing';
+    setText(el('rv-msg'), el('msg').textContent);
     if (sc.reveal === 'card') {
       el('rv-pic').style.display = 'none';
       h = '<div class="half quiet"><b></b><ul></ul></div><div class="half talk"><b></b><ul></ul></div>';
@@ -656,8 +756,11 @@ window.KJ_IMG = {
     setText(el('rv-yaku'), KJ.fill(sc.yaku, yobi()));
     setText(el('rv-tip'), sc.tip ? KJ.fill(sc.tip, yobi()) : '');
     el('rv-tip').style.display = sc.tip ? 'block' : 'none';
+    el('rv-zoom').style.display = (sc.reveal === 'card') ? 'none' : 'block';
+    if (showMagic(sc)) { later(function () { KJ.snd.play('magic'); }, 300); }
     setText(el('next-btn'), G.idx + 1 < G.scenes.length ? 'つぎへ' : 'さいごの 3つへ');
     rv.style.display = 'block';
+    sizePic();
     later(function () { rv.className = 'reveal show'; }, 30);
   }
   function fillHalf(div, data) {
@@ -677,6 +780,7 @@ window.KJ_IMG = {
     show('magic');
     list.innerHTML = '';
     G.opened = 0;
+    el('scr-play').className = 'screen';
     for (i = 0; i < KJ.MAGIC.length; i++) {
       b = doc.createElement('button');
       b.className = 'magic'; b.setAttribute('data-m', String(i));
@@ -772,6 +876,16 @@ window.KJ_IMG = {
     on('breath-back', function () { renderHome(); show('home'); });
     on('magic-back', function () { renderHome(); show('home'); });
     on('next-btn', onNext);
+    on('rv-pic', toggleZoom);
+    on('rv-zoom', toggleZoom);
+    on('grown-snd-test', function () {
+      var was = KJ.snd.on;
+      KJ.snd.on = true; KJ.snd.unlock();
+      setText(el('grown-snd-res'), KJ.snd.play('finale') ? 'ならしました' : 'おとの しくみが つくれません');
+      KJ.snd.on = was;
+    });
+    global.addEventListener('resize', sizePic, false);
+    doc.addEventListener('visibilitychange', function () { if (doc.hidden && KJ.snd.keep) { try { KJ.snd.keep.pause(); } catch (e) { /* つぎの タッチで もどる */ } } }, false);
     on('magic-next', startFinal);
     on('fin-home', function () { renderHome(); show('home'); });
     el('choices').addEventListener('click', function (ev) {
@@ -793,6 +907,7 @@ window.KJ_IMG = {
       S.shortMode = el('grown-len').value === 'short';
       S.sound = el('grown-snd').value !== 'off';
       KJ.snd.on = S.sound;
+      if (!S.sound && KJ.snd.keep) { try { KJ.snd.keep.pause(); } catch (e) { /* つぎに */ } }
       KJ.saveState(S); renderHome(); show('home');
     });
     KJ.snd.on = (S.sound !== false);
@@ -804,7 +919,7 @@ window.KJ_IMG = {
     show('home');
   }
   /* 試験用＝画面を 直接 うごかす 入口 */
-  KJ.ui = { startQuiz: startQuiz, showReveal: function () { clearTimers(); showReveal(); }, startBreath: startBreath, onChoice: onChoice, onNext: onNext, openMagic: openMagic, startFinal: startFinal,
+  KJ.ui = { startQuiz: startQuiz, showReveal: function () { clearTimers(); showReveal(); }, toggleZoom: toggleZoom, startBreath: startBreath, onChoice: onChoice, onNext: onNext, openMagic: openMagic, startFinal: startFinal,
     round: function () { return G; }, state: function () { return S; }, flush: function () { var t = timers.slice(0); return t.length; } };
 
   if (doc.readyState === 'loading') { doc.addEventListener('DOMContentLoaded', init, false); } else { init(); }

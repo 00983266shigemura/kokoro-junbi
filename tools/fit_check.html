@@ -20,7 +20,7 @@
 <div id="out"></div>
 <script>
 var sz = location.hash.match(/size=(\d+)x(\d+)/) || [0, 1024, 640];
-var W = +sz[1], H = +sz[2], fails = [], n = 0, maxH = 0, maxTag = '';
+var W = +sz[1], H = +sz[2], fails = [], n = 0, maxH = 0, maxTag = '', pw = 0, minPic = 9999, minZoom = 9999;
 document.getElementById('f').style.width = W + 'px'; document.getElementById('f').style.height = H + 'px';
 var shot = (location.hash.match(/shot=([a-z0-9]+)/) || [])[1] || '';
 function put(s) { document.getElementById('out').textContent += s + '\n'; }
@@ -59,10 +59,27 @@ document.getElementById('f').onload = function () {
       if (el('reveal').style.display === 'none') { errs.push(label + i + ' こたえの 絵が 出ない'); }
       if (el('rv-yaku').textContent.indexOf('{y}') >= 0 || el('q-text').textContent.indexOf('{y}') >= 0) { errs.push(label + i + ' {y} が のこった'); }
       if (meas('ans' + label + i)) { stop(); }
+      /* こたえの 画面＝もんだいが きえて、絵が おおきい（しげ指示 11/1） */
+      if (el('q-text').offsetHeight > 0 || el('choices').offsetHeight > 0) { errs.push(label + i + ' こたえの 画面に もんだいが のこった'); }
+      pw = el('rv-img').offsetWidth;
+      if (r.scenes[i].reveal !== 'card') {
+        if (pw < 700) { errs.push(label + i + ' こたえの 絵が ちいさい ' + pw); }
+        if (pw < minPic) { minPic = pw; }
+        el('rv-pic').click();
+        if (el('next-btn').offsetHeight > 0 || el('rv-img').offsetWidth < 840) { errs.push(label + i + ' 絵を さわっても おおきく ならない ' + el('rv-img').offsetWidth); }
+        if (el('rv-img').offsetWidth < minZoom) { minZoom = el('rv-img').offsetWidth; }
+        if (meas('zoom' + label + i)) { stop(); }
+        el('rv-pic').click();
+        if (el('next-btn').offsetHeight === 0) { errs.push(label + i + ' おおきい 絵から もどれない'); }
+      }
+      /* だいじな ことば＝とちゅうで 出す ばめんだけ 出る */
+      if ((r.scenes[i].magic >= 0) !== (el('rv-magic').style.display === 'block')) { errs.push(label + i + ' だいじな ことばの 出かたが ちがう'); }
+      if (r.scenes[i].magic >= 0 && el('rv-magic-w').textContent !== w.KJ.MAGIC[r.scenes[i].magic].w) { errs.push(label + i + ' だいじな ことばの もじが ちがう'); }
       played++;
       el('next-btn').click();
     }
     if (r.stars !== r.scenes.length) { errs.push(label + ' ほしの かずが ちがう ' + r.stars); }
+    if (!(r.got[0] && r.got[1] && r.got[2])) { errs.push(label + ' だいじな ことば 3つが とちゅうで そろわない'); }
     if (el('scr-magic').style.display === 'none') { errs.push(label + ' 3つの ことばへ すすまない'); }
     if (meas('magic' + label)) { stop(); }
     for (k = 0; k < 3; k++) { el('magic-list').getElementsByTagName('button')[k].click(); }
@@ -88,10 +105,10 @@ document.getElementById('f').onload = function () {
     w.setTimeout(function () {
       meas('grown');
       if (el('scr-grown').style.display === 'none') { errs.push('おとなのひと が ひらかない'); }
-      put('MEASURED=' + n + ' MAXH=' + maxH + ' at ' + maxTag + ' PLAYED=' + played);
+      put('MEASURED=' + n + ' MAXH=' + maxH + ' at ' + maxTag + ' PLAYED=' + played + ' PIC_MIN=' + minPic + ' ZOOM_MIN=' + minZoom);
       put('ERRS=' + errs.length + (errs.length ? ' ' + errs.join(' | ') : ''));
-      var asked = w.__audioAsked, silent = (typeof asked === 'number' && asked > 0 && w.KJ.snd.ctx === null);
-      put('AUDIO asked=' + asked + ' ctx=' + (w.KJ.snd.ctx === null ? 'なし' : 'あり') + ' → ' + (silent ? '無音' : '無音でない'));
+      var asked = w.__audioAsked, silent = (typeof asked === 'number' && asked > 0 && w.KJ.snd.ctx === null && w.KJ.snd.keep === null);
+      put('AUDIO asked=' + asked + ' ctx=' + (w.KJ.snd.ctx === null ? 'なし' : 'あり') + ' keep=' + (w.KJ.snd.keep === null ? 'なし' : 'あり') + ' → ' + (silent ? '無音' : '無音でない'));
       put(fails.length === 0 && errs.length === 0 && silent && played === 15 ? 'FIT=PASS' : 'FIT=FAIL played=' + played + ' ' + (silent ? '' : '無音化が効いていない ') + fails.slice(0, 12).join(' / ') + ' ' + errs.slice(0, 6).join(' | '));
     }, 1500);
   } catch (e) {

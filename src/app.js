@@ -9,7 +9,7 @@
   var KJ = global.KJ || {};
   global.KJ = KJ;
 
-  KJ.APP_VERSION = 1;
+  KJ.APP_VERSION = 2;
   KJ.SCHEMA = 1;
   KJ.STORE_KEY = 'kokoro_junbi_v1';
 
@@ -20,72 +20,73 @@
      q＝といかけ／ok＝ただしい こうどう／ng＝ついやって しまう こと（lure＝もとの ふきだし）
      yaku＝やくそく（「〜しない」でなく「〜する」の かたちで いう）／tip＝ひとこと たす こと
      reveal＝こたえの あとに 出す 絵（ring＝トイくんの いる ところ・絵の 1262×892 の わくでの 四角）
-     core＝みじかい（5こ）の ときも 出す */
+     core＝みじかい（5こ）の ときも 出す
+     magic＝この ばめんで 出す だいじな ことば（KJ.MAGIC の ばんごう・-1＝なし）。とちゅうで 出して こえに だし、さいごに おもいだす */
   var SCENES = [
     { id: 'idou', p: 2, title: 'いどう', stem: 's02',
       q: 'いろいろな おへやに いどう するよ。どう する？',
       ok: 'まえの こに ついて しずかに あるく',
       ng: 'おともだちと おしゃべり しながら あるく', lure: 'p2 ゆびを さして おしゃべり して いる こ',
       yaku: 'ならぶ ときは まえを みて しずかに', tip: '',
-      reveal: 'r02', ring: [645, 465, 85, 200], core: false },
+      reveal: 'r02', ring: [645, 465, 85, 200], core: false, magic: -1 },
     { id: 'tomodachi', p: 1, title: 'おともだち', stem: 'toi',
       q: 'まって いる とき、おともだちが はなしかけて きたよ。どう する？',
       ok: 'にっこり して、せんせいの ほうを むく',
       ng: 'いっしょに おしゃべり する', lure: 'p1 はなしかけられても あいてに しない',
       yaku: 'しずかに する ときの おはなしは あとで', tip: '',
-      reveal: 'card', ring: null, core: false },
+      reveal: 'card', ring: null, core: false, magic: -1 },
     { id: 'ohanashi', p: 4, title: 'おはなし', stem: 's04',
       q: 'せんせいが たいせつな おはなしを するよ。どこを みる？',
       ok: 'せんせいの かおを みて きく',
       ng: 'うしろの おともだちを みる', lure: 'p4 うしろを むいたり ものを おとしたり して いる こ',
       yaku: 'おはなしは せんせいの かおを みて きく', tip: '',
-      reveal: 'r04', ring: [420, 435, 80, 70], core: true },
+      reveal: 'r04', ring: [420, 435, 80, 70], core: true, magic: 0 },
     { id: 'otehon', p: 3, title: 'おてほん', stem: 's03',
       q: 'せんせいが おてほんを みせるよ。どう する？',
       ok: 'せんせいの おてほんを よく みて おぼえる',
       ng: 'おともだちの まねを すれば いい', lure: 'p3 みんなの まね したら いいだけ',
       yaku: 'おてほんは せんせいを みる。おともだちが ちがっても きに しない', tip: 'あいずが あってから うごこう',
-      reveal: 'r03', ring: [700, 525, 70, 110], core: true },
+      reveal: 'r03', ring: [700, 525, 70, 110], core: true, magic: 0 },
     { id: 'hajime', p: 5, title: 'はじめ', stem: 's05',
       q: 'テストの はじまり。えんぴつは いつ もつ？',
       ok: '「はじめ」と いわれてから もつ',
       ng: 'しって いる もんだいだから すぐ かく', lure: 'p5 この もんだい しってる かんたんだね',
       yaku: 'えんぴつは「はじめ」で もつ。「やめ」で おく', tip: '',
-      reveal: 'r05', ring: [200, 495, 125, 110], core: true },
+      reveal: 'r05', ring: [200, 495, 125, 110], core: true, magic: 1 },
     { id: 'wakaranai', p: 6, title: 'わからない とき', stem: 's06',
       q: 'わからない もんだいが あったら、どう おもう？',
       ok: '「だいじょうぶ。つぎ！」と こころで いう',
       ng: '「もう だめだ」と おもう', lure: 'p6 おこられる もう いや',
       yaku: 'わからない もんだいが あっても だいじょうぶ。つぎを がんばる', tip: 'みんなにも むずかしい もんだいが あるよ',
-      reveal: 'r06', ring: [410, 290, 150, 165], core: true },
+      reveal: 'r06', ring: [410, 290, 150, 165], core: true, magic: 2 },
     { id: 'oekaki', p: 7, title: 'おえかき', stem: 'toi',
       q: 'えを かく じかん。はやく かけたら どう する？',
       ok: 'じかん いっぱい、もっと ていねいに かく',
       ng: '「できました！」と おおきな こえで いう', lure: 'p7 できました ぼくが いちばん',
       yaku: 'じかん いっぱい ていねいに。じぶんの えを みて かく', tip: '',
-      reveal: 'r07', ring: [320, 230, 150, 175], core: false },
+      reveal: 'r07', ring: [320, 230, 150, 175], core: false, magic: -1 },
     { id: 'toire', p: 8, title: 'トイレ', stem: 's08',
       q: 'トイレが すんだら、どう する？',
       ok: 'あるいて しずかに もどる',
       ng: 'はしって もどる', lure: 'p8 いそげ',
       yaku: 'トイレの あとは あるいて しずかに', tip: 'いきたく なったら、てを あげて せんせいに いって いいよ',
-      reveal: 'r08', ring: [555, 310, 90, 195], core: false },
+      reveal: 'r08', ring: [555, 310, 90, 195], core: false, magic: -1 },
     { id: 'dance', p: 9, title: 'おどる', stem: 's09',
       q: '「おんがくに あわせて おどって ください」。どう する？',
       ok: 'はずかしがらずに げんきに おどる',
       ng: 'はずかしいから じっと たって いる', lure: 'p9 もじもじ して いる こ',
       yaku: 'うごく ときは げんきに。ゆうきを だそう', tip: '',
-      reveal: 'r09', ring: [550, 325, 180, 320], core: false },
+      reveal: 'r09', ring: [550, 325, 180, 320], core: false, magic: -1 },
     { id: 'kaeri', p: 10, title: 'かえりみち', stem: 'toi',
       q: 'テストは いつ おわり？',
       ok: '{y}の ところに もどったら おわり',
       ng: 'もんだいが おわったら もう おわり', lure: 'p10 キック する こ・おおごえの こ',
       yaku: '{y}に あうまで ならんで しずかに', tip: '',
-      reveal: 'r10', ring: [530, 270, 90, 155], core: true }
+      reveal: 'r10', ring: [530, 270, 90, 155], core: true, magic: -1 }
   ];
   KJ.SCENES = SCENES;
 
-  /* さいごに おもいだす 3つの ことば（おぼえるのは これだけ） */
+  /* だいじな 3つの ことば（おぼえるのは これだけ）。とちゅうの ばめんで 出し（magic）、さいごに おもいだす */
   KJ.MAGIC = [
     { w: 'よく みる・よく きく', sub: 'せんせいの かおと おてほん' },
     { w: 'あいずを まつ', sub: '「はじめ」で もつ・「やめ」で おく' },
@@ -145,19 +146,38 @@
     ok: [['C5', 0, 0.14, 0.8, 'triangle'], ['E5', 0.1, 0.14, 0.8, 'triangle'], ['G5', 0.2, 0.28, 0.9, 'triangle']],
     oshii: [['E5', 0, 0.16, 0.5, 'sine'], ['C5', 0.16, 0.24, 0.5, 'sine']],
     star: [['C6', 0, 0.1, 0.5, 'sine'], ['E6', 0.08, 0.1, 0.5, 'sine'], ['G6', 0.16, 0.22, 0.55, 'sine']],
-    inhale: [['C4', 0, 0.5, 0.35, 'sine'], ['E4', 0.5, 0.5, 0.35, 'sine'], ['G4', 1.0, 0.8, 0.35, 'sine']],
-    exhale: [['G4', 0, 0.6, 0.3, 'sine'], ['E4', 0.6, 0.6, 0.3, 'sine'], ['C4', 1.2, 1.2, 0.3, 'sine']],
+    inhale: [['C5', 0, 0.5, 0.4, 'sine'], ['E5', 0.5, 0.5, 0.4, 'sine'], ['G5', 1.0, 0.8, 0.4, 'sine']],
+    exhale: [['G5', 0, 0.6, 0.35, 'sine'], ['E5', 0.6, 0.6, 0.35, 'sine'], ['C5', 1.2, 1.2, 0.35, 'sine']],
     magic: [['G5', 0, 0.12, 0.6, 'triangle'], ['C6', 0.12, 0.3, 0.7, 'triangle']],
     finale: [['C5', 0, 0.16, 0.8, 'triangle'], ['E5', 0.15, 0.16, 0.8, 'triangle'], ['G5', 0.3, 0.16, 0.8, 'triangle'],
       ['C6', 0.45, 0.5, 0.9, 'triangle'], ['G5', 0.45, 0.5, 0.5, 'sine'], ['E6', 0.75, 0.6, 0.6, 'sine']]
   };
   KJ.SOUNDS = SOUNDS;
-  var snd = { ctx: null, on: true, vol: 0.22 };
+  var snd = { ctx: null, on: true, vol: 0.32, keep: null };
   KJ.snd = snd;
   function audioClass() { return global.AudioContext || global.webkitAudioContext || null; }
-  /* さいしょの タッチで 音の しくみを おこす（iOS 10 は タッチの 中で ないと 鳴らない） */
+  /* 音の ない 短い WAV（8000Hz・16bit・0.25びょう）。消音スイッチ対策の ために ながしつづける */
+  function silentWav() {
+    var n = 2000, len = n * 2, h, i;
+    function u32(v) { return String.fromCharCode(v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >> 24) & 255); }
+    function u16(v) { return String.fromCharCode(v & 255, (v >> 8) & 255); }
+    h = 'RIFF' + u32(36 + len) + 'WAVE' + 'fmt ' + u32(16) + u16(1) + u16(1) + u32(8000) + u32(16000) + u16(2) + u16(16) + 'data' + u32(len);
+    for (i = 0; i < len; i++) { h += String.fromCharCode(0); }
+    return 'data:audio/wav;base64,' + global.btoa(h);
+  }
+  KJ.silentWav = silentWav;
+  /* さいしょの タッチで 音の しくみを おこす（iOS 10 は タッチの 中で ないと 鳴らない）。
+     iPad の 消音（よこの スイッチ・コントロールセンター）が 入って いると、合成の 音（Web Audio）だけ 消される。
+     音の ない audio を 1つ ながしつづけると、ページが「再生」あつかいに なり、合成の 音も 鳴る（推定・実機で 確かめる） */
   snd.unlock = function () {
-    var AC, b, src;
+    var AC, b, src, a;
+    try {
+      if (!snd.keep && global.Audio) {
+        a = new global.Audio(); a.src = silentWav(); a.loop = true;
+        snd.keep = a;
+      }
+      if (snd.keep && snd.on && snd.keep.paused) { snd.keep.play(); }
+    } catch (e0) { /* 鳴らなくても つかえる */ }
     try {
       if (!snd.ctx) {
         AC = audioClass(); if (!AC) { return false; }
@@ -233,6 +253,17 @@
     for (i = 0; i < KJ.MAGIC.length; i++) { w.push(KJ.MAGIC[i].w, KJ.MAGIC[i].sub); }
     for (i = 0; i < w.length; i++) { for (j = 0; j < KJ.BAN_WORDS.length; j++) { ok(String(w[i]).indexOf(KJ.BAN_WORDS[j]) < 0, 'つかわない ことば「' + KJ.BAN_WORDS[j] + '」が ない: ' + w[i]); } }
     ok(KJ.MAGIC.length === 3, 'おぼえる ことばは 3つ');
+    /* だいじな ことば が とちゅうで 3つとも 出る（10もん・5もん とも）＝さいごに おもいだす まえに 1かいは 見て こえに だす */
+    for (k = 0; k < 2; k++) {
+      n5 = KJ.pickScenes(k === 1); w = [0, 0, 0];
+      for (i = 0; i < n5.length; i++) {
+        ok(n5[i].magic === -1 || (n5[i].magic >= 0 && n5[i].magic < KJ.MAGIC.length), n5[i].id + ' magic の ばんごうが ある');
+        if (n5[i].magic >= 0) { w[n5[i].magic]++; }
+      }
+      for (j = 0; j < 3; j++) { ok(w[j] >= 1, (k === 1 ? 'みじかい' : '10もん') + ' で ことば ' + (j + 1) + ' が とちゅうで 出る（' + w[j] + 'かい）'); }
+      ok(n5[n5.length - 1].magic === -1, 'さいごの ばめんは ことばを 出さない（おもいだす まえに あいだを おく）');
+    }
+    ok(KJ.silentWav().indexOf('data:audio/wav;base64,UklGR') === 0, '音の ない WAV が つくれる');
     for (i = 0; i < KJ.MAGIC.length; i++) { ok(KJ.negHits(KJ.MAGIC[i].w) === 0, 'おぼえる ことば も 否定形なし: ' + KJ.MAGIC[i].w); }
     /* 否定形さがし が 効くか（見本を まぜて 落ちること） */
     ok(KJ.negHits('となりの えは みない') === 1, '見本「みない」を 見つける');

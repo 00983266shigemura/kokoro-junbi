@@ -94,6 +94,31 @@
   .card2 .half b{display:block; font-size:0.92rem;}
   .card2 .quiet{border-color:var(--ao);} .card2 .talk{border-color:var(--daidai);}
   #next-btn{font-size:1.04rem; padding:12px 40px; margin-top:6px;}
+  .bar .kotoba-got{float:right; margin:6px 14px 0 0; font-weight:bold; color:var(--ink-soft);}
+  .bar .kotoba-got span{display:inline-block; width:1.3em; height:1.3em; line-height:1.2em; text-align:center; margin-left:4px; border:2px dashed var(--line); border-radius:50%; color:var(--ink-soft);}
+  .bar .kotoba-got span.on{border:2px solid var(--ao); background:var(--ao); color:var(--on-accent);}
+  /* こたえの 画面＝もんだいを けして、絵を できるだけ おおきく（はばは ui.js の sizePic が きめる） */
+  .revealing .col-l,.revealing #choices{display:none;}
+  .revealing .col-r{float:none; width:100%;}
+  .revealing .reveal{overflow:hidden; text-align:left; padding:8px;}
+  .rv-l{float:left; width:74%;}
+  .rv-r{float:right; width:25%; text-align:center;}
+  .rv-r .msg{margin:0 0 4px; font-size:0.75rem; word-break:keep-all;}
+  .rv-r .yaku{font-size:0.92rem; margin:4px 0;}
+  .rv-r .tip{word-break:keep-all; font-size:0.67rem;}
+  .rv-r #next-btn{padding:10px 30px; margin-top:4px;}
+  .rv-zoom{font-size:0.58rem; color:var(--ink-soft); margin:4px 0;}
+  .kotoba{border:4px solid var(--daidai); background:var(--daidai-bg); border-radius:16px; padding:6px 8px; margin:0 0 6px; word-break:keep-all;}
+  .kotoba .kh{display:block; font-size:0.62rem; font-weight:bold; color:var(--daidai-ink);}
+  .kotoba b{display:block; font-size:0.92rem; line-height:1.35; color:var(--ink);}
+  .kotoba .ks{display:block; font-size:0.58rem; color:var(--ink-soft);}
+  .kotoba.new{-webkit-animation:pop 0.6s ease-out 1; animation:pop 0.6s ease-out 1;}
+  @-webkit-keyframes pop{0%{-webkit-transform:scale(0.6);}70%{-webkit-transform:scale(1.08);}100%{-webkit-transform:scale(1);}}
+  @keyframes pop{0%{transform:scale(0.6);}70%{transform:scale(1.08);}100%{transform:scale(1);}}
+  /* 絵だけを 画面いっぱいに（絵を さわると きりかわる） */
+  .zoom .bar,.zoom .rv-r{display:none;}
+  .zoom .rv-l{float:none; width:100%;}
+  .zoom .reveal{border:0; padding:0;}
 
   /* 3つの ことば */
   .magic{display:block; width:100%; margin:0 0 12px; text-align:left; background:var(--card); color:var(--ink); border:4px dashed var(--line); border-radius:18px; padding:12px 18px; min-height:96px;}
@@ -153,10 +178,11 @@
 
 <!-- ===== クイズ ===== -->
 <div id="scr-play" class="screen" style="display:none">
-  <div class="bar">
+  <div class="bar" id="play-bar">
     <button id="play-back" class="sub small">やめる</button>
     <span id="play-title"></span>
     <span id="play-stars" class="stars"></span>
+    <span id="play-kotoba" class="kotoba-got"></span>
   </div>
   <div class="col-l">
     <div class="qbox">
@@ -168,11 +194,18 @@
   <div class="col-r">
     <div id="choices"></div>
     <div id="reveal" class="reveal" style="display:none">
-      <div id="rv-pic" class="pic"><img id="rv-img" alt=""><div id="rv-ring" class="ring"></div></div>
-      <div id="rv-card" class="card2" style="display:none"></div>
-      <div id="rv-yaku" class="yaku"></div>
-      <div id="rv-tip" class="tip"></div>
-      <button id="next-btn">つぎへ</button>
+      <div id="rv-l" class="rv-l">
+        <div id="rv-pic" class="pic"><img id="rv-img" alt=""><div id="rv-ring" class="ring"></div></div>
+        <div id="rv-card" class="card2" style="display:none"></div>
+      </div>
+      <div class="rv-r">
+        <div id="rv-msg" class="msg good"></div>
+        <div id="rv-magic" class="kotoba" style="display:none"><span id="rv-magic-h" class="kh"></span><b id="rv-magic-w"></b><span id="rv-magic-say" class="ks"></span></div>
+        <div id="rv-yaku" class="yaku"></div>
+        <div id="rv-tip" class="tip"></div>
+        <div id="rv-zoom" class="rv-zoom">えを さわると もっと おおきく なるよ</div>
+        <button id="next-btn">つぎへ</button>
+      </div>
     </div>
   </div>
 </div>
@@ -180,7 +213,7 @@
 <!-- ===== 3つの ことば ===== -->
 <div id="scr-magic" class="screen" style="display:none">
   <div class="col-l">
-    <div class="bubble">さいごに、だいじな ことばを 3つ おもいだそう。<br>なんだった かな？ いって から さわってね。</div>
+    <div class="bubble">とちゅうで でて きた だいじな ことば 3つ、おもいだせる かな？<br>いって から さわってね。</div>
     <p class="note">ぜんぶ ひらいたら つぎへ</p>
     <button id="magic-back" class="sub small">やめる</button> <button id="magic-next" style="display:none">つぎへ</button>
   </div>
@@ -207,7 +240,8 @@
     <label>なまえ（ひらがな・8もじまで・空でもよい）<input id="grown-name" type="text" maxlength="8"></label>
     <label>長さ <select id="grown-len"><option value="full">10問（約5分）</option><option value="short">5問（約3分）</option></select></label>
     <label>音 <select id="grown-snd"><option value="on">あり</option><option value="off">なし</option></select></label>
-    <p class="note">音が出ないときは、iPad の音量と消音（ミュート）スイッチを確かめてください。</p>
+    <p><button id="grown-snd-test" class="small">音のためし</button> <span id="grown-snd-res" class="note"></span></p>
+    <p class="note">音が出ないときは、iPad の音量ボタンを上げ、横の消音スイッチとコントロールセンターの消音（ベルの印）を切ってください。</p>
     <p><button id="grown-save" class="small">保存してもどる</button></p>
     <p id="grown-ver" class="note"></p>
   </div><div class="grown-r">
@@ -215,7 +249,7 @@
     <ul>
       <li>問いは大人が読み、子どもに先に答えさせる（思い出す練習になる）。「どうしてそう思った？」と理由も聞く</li>
       <li>間違えても叱らない。「おしい、トイくんはこっちだったね」で次へ</li>
-      <li>今日はこれ以上の注意を足さない。覚えるのは最後の3つの言葉だけ</li>
+      <li>今日はこれ以上の注意を足さない。覚えるのは3つの言葉だけ（途中の場面で出たら、声に出して言わせる＝言うと覚えやすい）</li>
       <li>大人が落ち着いた顔と声でいる。子どもは大人の表情を手がかりに安心する</li>
       <li>最後は抱きしめて「どんな時も大好き」。結果の話（合格・点数）はしない</li>
     </ul>
@@ -224,6 +258,7 @@
       <li>元資料＝「お子さんの為の入試の心構え」（レインボー先生）。挿絵も同じ資料から</li>
       <li>「〜したらダメ」は「〜しよう」の形に言い換えた（否定形より、するべき行動の方が幼児に伝わりやすい）</li>
       <li>「話しかけられても相手にしない」は、静かにする場面に限った。みんなで遊ぶ課題では仲良く話してよいと分けた</li>
+      <li>答えの後の絵は、さわると画面いっぱいに大きくなる（吹き出しを一緒に読む）</li>
     </ul>
   </div></div>
 </div>
