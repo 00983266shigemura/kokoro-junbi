@@ -9,7 +9,7 @@
   var KJ = global.KJ || {};
   global.KJ = KJ;
 
-  KJ.APP_VERSION = 2;
+  KJ.APP_VERSION = 3;
   KJ.SCHEMA = 1;
   KJ.STORE_KEY = 'kokoro_junbi_v1';
 
@@ -18,6 +18,7 @@
 
   /* ================= ばめん（10こ・当日の ながれの じゅん） =================
      q＝といかけ／ok＝ただしい こうどう／ng＝ついやって しまう こと（lure＝もとの ふきだし）
+     ng2＝3つめの えらぶ もの（ある ばめんだけ・lure2＝その 出どころ）
      yaku＝やくそく（「〜しない」でなく「〜する」の かたちで いう）／tip＝ひとこと たす こと
      reveal＝こたえの あとに 出す 絵（ring＝トイくんの いる ところ・絵の 1262×892 の わくでの 四角）
      core＝みじかい（5こ）の ときも 出す
@@ -78,19 +79,21 @@
       yaku: 'うごく ときは げんきに。ゆうきを だそう', tip: '',
       reveal: 'r09', ring: [550, 325, 180, 320], core: false, magic: -1 },
     { id: 'kaeri', p: 10, title: 'かえりみち', stem: 'toi',
-      q: 'テストは いつ おわり？',
-      ok: '{y}の ところに もどったら おわり',
-      ng: 'もんだいが おわったら もう おわり', lure: 'p10 キック する こ・おおごえの こ',
-      yaku: '{y}に あうまで ならんで しずかに', tip: '',
+      q: 'テストは いつまで？',
+      ok: 'がっこうの もんを でるまで',
+      ng: 'もんだいが おわるまで', lure: 'p10 キック する こ・おおごえの こ',
+      ng2: '{y}に あうまで', lure2: 'p10 ほんぶんの「おかあさんの ところに もどったら おわり」を もんを でるまでに のばした',
+      yaku: 'がっこうの もんを でるまで テスト。さいごまで しずかに', tip: '{y}に あえても、もんを でるまで しずかに',
       reveal: 'r10', ring: [530, 270, 90, 155], core: true, magic: -1 }
   ];
   KJ.SCENES = SCENES;
 
-  /* だいじな 3つの ことば（おぼえるのは これだけ）。とちゅうの ばめんで 出し（magic）、さいごに おもいだす */
+  /* だいじな 3つの ことば（おぼえるのは これだけ）。とちゅうの ばめんで 出し（magic）、さいごに おもいだす。
+     さいごは head（ぶんの とちゅう）まで 出して、tail（さいごの ことば）を こどもが いう。w＝head＋tail */
   KJ.MAGIC = [
-    { w: 'よく みる・よく きく', sub: 'せんせいの かおと おてほん' },
-    { w: 'あいずを まつ', sub: '「はじめ」で もつ・「やめ」で おく' },
-    { w: 'わからなくても だいじょうぶ、つぎ！', sub: 'ドキドキしたら ふうせん いき' }
+    { w: 'よく みる・よく きく', head: 'よく みる・よく ', tail: 'きく', sub: 'せんせいの かおと おてほん' },
+    { w: 'あいずを まつ', head: 'あいずを ', tail: 'まつ', sub: '「はじめ」で もつ・「やめ」で おく' },
+    { w: 'わからなくても だいじょうぶ、つぎ！', head: 'わからなくても だいじょうぶ、', tail: 'つぎ！', sub: 'ドキドキしたら ふうせん いき' }
   ];
   /* しずかに する とき／なかよく はなす とき（おともだち の こたえの カード） */
   KJ.CARD = {
@@ -133,6 +136,14 @@
     return rngState / 0x80000000;
   }
   KJ.okFirst = function () { return rnd() < 0.5; };
+  /* えらぶ もの の ならび（2つ＝okFirst・3つ＝ok を 3か所の どこかへ） */
+  KJ.options = function (sc) {
+    var bad = [{ t: sc.ng, good: false }], at;
+    if (sc.ng2) { bad.push({ t: sc.ng2, good: false }); if (rnd() < 0.5) { bad.reverse(); } }
+    at = (bad.length === 1) ? (KJ.okFirst() ? 0 : 1) : Math.floor(rnd() * 3);
+    bad.splice(at, 0, { t: sc.ok, good: true });
+    return bad;
+  };
   KJ.praise = function () { return PRAISE[Math.floor(rnd() * PRAISE.length)]; };
 
   /* ふうせん いき＝すって 4びょう・はいて 6びょう を 3かい（ゆっくり はく ほうを ながく） */
@@ -245,14 +256,32 @@
       ok(s.reveal === 'card' || !!(global.KJ_IMG && global.KJ_IMG[s.reveal]) || !global.KJ_IMG, s.id + ' こたえの 絵が ある');
       ok(s.reveal === 'card' || (s.ring && s.ring.length === 4 && s.ring[0] + s.ring[2] <= 1178 && s.ring[1] + s.ring[3] <= 842), s.id + ' トイくんの わくが 絵の 中');
       ok(s.ok.length <= 24 && s.ng.length <= 24, s.id + ' えらぶ ことばは 24もじ いない（よみやすさ）');
+      if (s.ng2) {
+        ok(s.ng2.length <= 24 && s.ng2 !== s.ok && s.ng2 !== s.ng, s.id + ' 3つめの えらぶ ことばが ある・かさならない');
+        ok(typeof s.lure2 === 'string' && s.lure2.indexOf('p' + s.p + ' ') === 0, s.id + ' 3つめの 出どころ（ページ）が ある');
+      }
     }
     /* ことばに 能力ほめ・あおる ことばが ない */
     w = [];
     for (i = 0; i < PRAISE.length; i++) { w.push(PRAISE[i]); }
-    for (i = 0; i < SCENES.length; i++) { w.push(SCENES[i].q, SCENES[i].ok, SCENES[i].yaku, SCENES[i].tip); }
+    for (i = 0; i < SCENES.length; i++) { w.push(SCENES[i].q, SCENES[i].ok, SCENES[i].yaku, SCENES[i].tip, SCENES[i].ng2 || ''); }
     for (i = 0; i < KJ.MAGIC.length; i++) { w.push(KJ.MAGIC[i].w, KJ.MAGIC[i].sub); }
     for (i = 0; i < w.length; i++) { for (j = 0; j < KJ.BAN_WORDS.length; j++) { ok(String(w[i]).indexOf(KJ.BAN_WORDS[j]) < 0, 'つかわない ことば「' + KJ.BAN_WORDS[j] + '」が ない: ' + w[i]); } }
     ok(KJ.MAGIC.length === 3, 'おぼえる ことばは 3つ');
+    /* さいごは ぶんの とちゅうまで 出し、さいごの ことばを いわせる（しげ指示 11/1） */
+    for (i = 0; i < KJ.MAGIC.length; i++) {
+      ok(KJ.MAGIC[i].head + KJ.MAGIC[i].tail === KJ.MAGIC[i].w, 'ことば ' + (i + 1) + ' は とちゅう＋さいごの ことば で できて いる');
+      ok(KJ.MAGIC[i].head.length > 0 && KJ.MAGIC[i].tail.length >= 2, 'ことば ' + (i + 1) + ' の とちゅうと さいごが ある');
+    }
+    /* おわりの ばめん＝がっこうの もんを でるまで が ただしい（しげ指示 11/1） */
+    s = SCENES[SCENES.length - 1];
+    ok(s.id === 'kaeri' && s.ok.indexOf('もんを でるまで') >= 0, 'おわりは もんを でるまで が ただしい');
+    ok(!!s.ng2 && s.ng2.indexOf('あうまで') >= 0, '{y}に あうまで は まちがいの ほう');
+    /* 3つの ときも ok の ばしょが かたよらない・ok は いつも 1つ */
+    KJ.seed(5); w = [0, 0, 0];
+    for (i = 0; i < 300; i++) { n5 = KJ.options(s); k = 0; for (j = 0; j < n5.length; j++) { if (n5[j].good) { w[j]++; k++; } } ok(n5.length === 3 && k === 1, '3つの えらぶ ものに ok は 1つ'); }
+    KJ.seed(null);
+    ok(w[0] > 60 && w[1] > 60 && w[2] > 60, '3つの ときの ok の ばしょが かたよらない（' + w.join('/') + '）');
     /* だいじな ことば が とちゅうで 3つとも 出る（10もん・5もん とも）＝さいごに おもいだす まえに 1かいは 見て こえに だす */
     for (k = 0; k < 2; k++) {
       n5 = KJ.pickScenes(k === 1); w = [0, 0, 0];
@@ -272,7 +301,7 @@
     ok(KJ.negHits('おともだちが ちがっても きに しない') === 0, 'ゆるす 言いかた「きに しない」は とおす');
     /* よびかた の さしかえ */
     ok(KJ.fill('{y}に あう', 'パパ') === 'パパに あう', 'よびかた が はいる');
-    ok(KJ.fill(SCENES[9].ok, '') .indexOf('{y}') < 0, 'よびかた が からでも {y} が のこらない');
+    ok(KJ.fill(SCENES[9].ng2, '') .indexOf('{y}') < 0, 'よびかた が からでも {y} が のこらない');
     /* ふうせん いき＝30びょう */
     ok((KJ.BREATH.inhale + KJ.BREATH.exhale) * KJ.BREATH.times === 30000, 'ふうせん いき は 30びょう');
     ok(KJ.BREATH.exhale > KJ.BREATH.inhale, 'はく ほうが ながい');

@@ -78,7 +78,7 @@
     el('play-kotoba').innerHTML = 'ことば ' + h;
   }
   function renderScene() {
-    var sc = G.scenes[G.idx], box = el('choices'), okFirst = KJ.okFirst(), opts, i, b, qi = el('q-img');
+    var sc = G.scenes[G.idx], box = el('choices'), opts, i, b, qi = el('q-img');
     G.tries = 0; G.done = false;
     el('scr-play').className = 'screen';
     setText(el('play-title'), (G.idx + 1) + '／' + G.scenes.length + '　' + sc.title);
@@ -87,9 +87,10 @@
     qi.className = (sc.stem === 'toi') ? 'tiny' : '';
     setText(el('q-text'), KJ.fill(sc.q, yobi()));
     setText(el('msg'), ''); el('msg').className = 'msg';
-    opts = okFirst ? [{ t: sc.ok, good: true }, { t: sc.ng, good: false }] : [{ t: sc.ng, good: false }, { t: sc.ok, good: true }];
+    opts = KJ.options(sc);
     G.order = opts;
     box.innerHTML = '';
+    box.className = (opts.length > 2) ? 'three' : '';
     for (i = 0; i < opts.length; i++) {
       b = doc.createElement('button');
       b.className = 'choice'; b.setAttribute('data-i', String(i));
@@ -204,9 +205,11 @@
     for (i = 0; i < KJ.MAGIC.length; i++) {
       b = doc.createElement('button');
       b.className = 'magic'; b.setAttribute('data-m', String(i));
-      b.innerHTML = '<span class="num"></span><b></b><span></span>';
+      b.innerHTML = '<span class="num"></span><b><i class="hd"></i><i class="tl"></i></b><span class="sb"></span>';
       b.getElementsByTagName('span')[0].textContent = String(i + 1);
-      b.getElementsByTagName('b')[0].textContent = 'なんだった かな？';
+      b.getElementsByTagName('i')[0].textContent = KJ.MAGIC[i].head;
+      b.getElementsByTagName('i')[1].textContent = '？';
+      b.getElementsByTagName('span')[1].textContent = 'さいごの ことばを いってから さわってね';
       list.appendChild(b);
     }
     el('magic-next').style.display = 'none';
@@ -215,7 +218,7 @@
     var b = el('magic-list').getElementsByTagName('button')[i], m = KJ.MAGIC[i];
     if (!b || b.className.indexOf('open') >= 0) { return; }
     b.className = 'magic open';
-    b.getElementsByTagName('b')[0].textContent = m.w;
+    b.getElementsByTagName('i')[1].textContent = m.tail;
     b.getElementsByTagName('span')[1].textContent = m.sub;
     KJ.snd.play('magic');
     G.opened++;

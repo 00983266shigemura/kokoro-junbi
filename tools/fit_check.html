@@ -44,8 +44,10 @@ document.getElementById('f').onload = function () {
     for (i = 0; i < r.scenes.length; i++) {
       if (meas('play' + label + i)) { stop(); }
       cards = el('choices').getElementsByTagName('button');
-      if (cards.length !== 2) { errs.push(label + i + ' えらぶ ボタンが 2つでない'); }
-      good = r.order[0].good ? 0 : 1; bad = 1 - good;
+      if (cards.length !== (r.scenes[i].ng2 ? 3 : 2)) { errs.push(label + i + ' えらぶ ボタンの かずが ちがう ' + cards.length); }
+      for (k = 0; k < r.order.length; k++) { if (r.order[k].good) { good = k; } }
+      bad = (good === 0) ? 1 : 0;
+      for (k = 0; k < cards.length; k++) { if (cards[k].textContent.indexOf('{y}') >= 0) { errs.push(label + i + ' えらぶ ことばに {y} が のこった'); } }
       if (wrongAt.indexOf(i) >= 0) {
         cards[bad].click();
         if (el('msg').textContent === '' || cards[bad].className.indexOf('wrong') < 0) { errs.push(label + i + ' まちがいの しるしが 出ない'); }
@@ -82,7 +84,13 @@ document.getElementById('f').onload = function () {
     if (!(r.got[0] && r.got[1] && r.got[2])) { errs.push(label + ' だいじな ことば 3つが とちゅうで そろわない'); }
     if (el('scr-magic').style.display === 'none') { errs.push(label + ' 3つの ことばへ すすまない'); }
     if (meas('magic' + label)) { stop(); }
-    for (k = 0; k < 3; k++) { el('magic-list').getElementsByTagName('button')[k].click(); }
+    /* さいごの 3つ＝ぶんの とちゅうまで 出て、さいごの ことばは さわるまで「？」（しげ指示 11/1） */
+    for (k = 0; k < 3; k++) {
+      cards = el('magic-list').getElementsByTagName('button')[k].getElementsByTagName('i');
+      if (cards[0].textContent !== w.KJ.MAGIC[k].head || cards[1].textContent !== '？') { errs.push(label + ' ことば ' + (k + 1) + ' の とちゅうの 出かたが ちがう'); }
+      el('magic-list').getElementsByTagName('button')[k].click();
+      if (cards[1].textContent !== w.KJ.MAGIC[k].tail) { errs.push(label + ' ことば ' + (k + 1) + ' の さいごの ことばが 出ない'); }
+    }
     if (el('magic-next').style.display === 'none') { errs.push(label + ' 3つ ひらいても つぎへ が 出ない'); }
     if (meas('magicopen' + label)) { stop(); }
     el('magic-next').click();
