@@ -11,34 +11,27 @@
   html{font-size:24px;}
   body{background:var(--ground); color:var(--ink); font-family:monospace; font-size:0.6rem; white-space:pre;}
 </style>
-<script>
-  /* 無音化（自己点検でも音の入口は使わせない。tools/mkpage.py と同じ塞ぎ方） */
-  window.__audioAsked = 0;
-  (function () {
-    function blocked() { window.__audioAsked++; throw new Error('自己点検では音を出せません'); }
-    window.AudioContext = blocked; window.webkitAudioContext = blocked; window.OfflineAudioContext = blocked; window.Audio = blocked;
-    try { window.HTMLMediaElement.prototype.play = blocked; } catch (e) {}
-    try { Object.defineProperty(window, 'speechSynthesis', { value: { speak: blocked, cancel: function () {} }, configurable: true }); } catch (e) {}
-  })();
-  window.__loadErrors = [];
-  window.onerror = function (msg, src, line, col) { window.__loadErrors.push('ERR ' + msg + ' @' + src + ':' + line + ':' + col); };
-</script>
 </head>
 <body>
+<!-- 自己点検は 組み立てた アプリそのもの（画面つき）で 回す＝K26 押した手ごたえ・K30 エラーの帯は 本物の 画面が 要る。
+     開くのは 無音の複製（tools/mkpage.py が作る logs/silent_index.html）だけ＝試験で音を鳴らさない。
+     読み込みで 起きた エラーは アプリ自身の 帯（KJ_ERR）に たまる＝ERR 行として 出す -->
+<iframe id="f" src="../logs/silent_index.html" style="width:1024px;height:640px;border:0;display:block"></iframe>
 <div id="out">（まだ）</div>
-<script src="../src/app.js" onerror="window.__loadErrors.push('ERR script load failed')"></script>
 <script>
-(function () {
-  var out = document.getElementById('out'), lines;
+document.getElementById('f').onload = function () {
+  var out = document.getElementById('out'), w = this.contentWindow, lines, pre = [], i;
   try {
-    if (!window.KJ) { throw new Error('KJ が無い＝app.js が最後まで実行されていない'); }
-    lines = window.KJ.selfTest(document);
-    out.textContent = lines.concat(window.__loadErrors).join('\n');
+    if (w.KJ_ERR) { for (i = 0; i < w.KJ_ERR.list.length; i++) { pre.push('ERR ' + w.KJ_ERR.list[i]); } }
+    if (!w.KJ || !w.KJ.selfTest) { throw new Error('KJ が無い＝app.js が最後まで実行されていない'); }
+    if (typeof w.__audioAsked !== 'number') { throw new Error('無音の複製ではない（tools/mkpage.py の目印が無い）'); }
+    lines = w.KJ.selfTest(w.document);
+    out.textContent = lines.concat(pre).join('\n');
   } catch (e) {
-    out.textContent = 'FAIL=exception ' + (e && e.message ? e.message : e) + '\n' + window.__loadErrors.join('\n') + '\n' + (e && e.stack ? e.stack : '');
+    out.textContent = 'FAIL=exception ' + (e && e.message ? e.message : e) + '\n' + pre.join('\n') + '\n' + (e && e.stack ? e.stack : '');
   }
   document.title = 'DONE';
-})();
+};
 </script>
 </body>
 </html>

@@ -148,15 +148,55 @@
   .grown-l{float:left; width:40%;} .grown-r{float:right; width:57%;}
   .head{overflow:hidden;} .head h1{float:left;} .head .right{float:right; margin-top:8px;}
 
+  /* 押した 手ごたえ（K26・おかえりクエスト の .card.press と 同じ 形）＝さわると 0.05びょうで へこみ、はなすと いきすぎて もどる */
+  button,#rv-pic{ -webkit-transition:-webkit-transform 0.22s cubic-bezier(0.34,1.56,0.64,1); transition:transform 0.22s cubic-bezier(0.34,1.56,0.64,1); }
+  button.press,#rv-pic.press{ -webkit-transform:scale(0.92); transform:scale(0.92); -webkit-transition-duration:0.05s; transition-duration:0.05s; }
+
+  /* エラーの 帯（K30）＝ふだんは 出さない。思わぬ エラーの ときだけ 画面の 下に 出す */
+  #err-band{display:none; position:fixed; left:0; right:0; bottom:0; z-index:50; background:var(--daidai-bg); color:var(--ink); border-top:4px solid var(--daidai); padding:6px 16px 8px; cursor:pointer;}
+  #err-band-h{display:block; font-size:0.83rem; font-weight:bold; color:var(--daidai-ink);}
+  #err-band-x{float:right; font-size:0.62rem; margin-top:4px; color:var(--ink-soft);}
+  #err-band-raw{display:block; font-size:0.5rem; color:var(--ink-soft); font-family:monospace; word-break:break-all; max-height:3em; overflow:hidden;}
+
   @media (max-width:760px){
     .col-l,.col-r,.home-l,.home-r,.fin-l,.fin-r,.grown-l,.grown-r{float:none; width:100%;}
   }
 </style>
 <script>
+/* エラーの 帯（K30）。いちばん さきに おく＝あとの スクリプトが 止まっても 帯は 出る。
+   1ぎょうめ＝かなの おわび、2ぎょうめ＝なまの エラー（メッセージと ぎょう）。実機の なまの エラーを 見る ただ 1つの 道。
+   さいしょの エラーを 出す（ほかの エラーは かずだけ）。さわると きえる */
+(function () {
+  var E = { list: [] };
+  window.KJ_ERR = E;
+  function band() { return document.getElementById('err-band'); }
+  E.hide = function () { var b = band(); if (b) { b.style.display = 'none'; } };
+  E.paint = function () {
+    var b = band(), r;
+    if (!b || !E.list.length) { return false; }
+    r = document.getElementById('err-band-raw');
+    if (r) { r.textContent = E.list[0] + (E.list.length > 1 ? '（ほか ' + (E.list.length - 1) + 'こ）' : ''); }
+    b.onclick = E.hide;
+    b.style.display = 'block';
+    return true;
+  };
+  window.onerror = function (msg, src, line, col) {
+    try {
+      if (E.list.length < 20) { E.list.push(String(msg) + ' （' + (line || '?') + 'ぎょう' + (col ? ':' + col : '') + '）'); }
+      if (!E.paint() && document.addEventListener) { document.addEventListener('DOMContentLoaded', E.paint, false); }
+    } catch (e) { /* 帯が 出せなくても とまらない */ }
+    return false;
+  };
+})();
+</script>
+<script>
 <!--IMG_JS-->
 </script>
 </head>
 <body>
+
+<!-- ===== エラーの 帯（K30・ふだんは 出さない） ===== -->
+<div id="err-band"><span id="err-band-x">さわると とじる</span><span id="err-band-h">ごめんね。うまく うごかなかったよ</span><span id="err-band-raw"></span></div>
 
 <!-- ===== はじめ ===== -->
 <div id="scr-home" class="screen">

@@ -289,6 +289,38 @@
     ac.addEventListener('updateready', function () { try { ac.swapCache(); } catch (e) { /* つぎに */ } cacheReady = true; reloadIfIdle(); }, false);
   }
 
+  /* ================= 押した 手ごたえ（K26・おかえりクエスト の .card.press と 同じ 形） =================
+     さわった しゅんかんに すこし へこみ、はなすと いきすぎて もどる。おす しょり（click）には さわらない＝2かい はしらない。
+     子どもが おす ボタン ぜんぶ と こたえの 絵（rv-pic）。おとなの ボタン（ながおし・おとなのひと の 画面）は のぞく */
+  var pressed = null;
+  function adultNode(t) {
+    while (t && t !== doc) { if (t.id === 'grown-btn' || t.id === 'scr-grown') { return true; } t = t.parentNode; }
+    return false;
+  }
+  function pressTarget(t) {
+    var n = 0;
+    while (t && t !== doc && n < 5) {
+      if (t.nodeType === 1 && (t.tagName === 'BUTTON' || t.id === 'rv-pic')) { return adultNode(t) ? null : t; }
+      t = t.parentNode; n++;
+    }
+    return null;
+  }
+  function pressOff() {
+    var p = pressed;
+    pressed = null;
+    if (p) { p.className = (' ' + p.className + ' ').replace(' press ', ' ').replace(/^\s+|\s+$/g, ''); }
+  }
+  function pressOn(ev) {
+    var t;
+    try {
+      pressOff();
+      t = pressTarget(ev.target);
+      if (t && (' ' + t.className + ' ').indexOf(' press ') < 0) { t.className = t.className ? t.className + ' press' : 'press'; }
+      pressed = t;
+    } catch (e) { /* 手ごたえが なくても おせる */ }
+  }
+  KJ.press = { target: pressTarget, adult: adultNode };
+
   /* ================= 押したときの 受けとり ================= */
   function init() {
     var gb = el('grown-btn');
@@ -304,7 +336,10 @@
     on('grown-snd-test', function () {
       var was = KJ.snd.on;
       KJ.snd.on = true; KJ.snd.unlock();
-      setText(el('grown-snd-res'), KJ.snd.play('finale') ? 'ならしました' : 'おとの しくみが つくれません');
+      var played = KJ.snd.play('finale'), c = KJ.snd.ctx, k = KJ.snd.keep;
+      /* そのときの 状態も 出す（実機で 鳴らない ときの てがかり） */
+      setText(el('grown-snd-res'), (played ? 'ならしました' : 'おとの しくみが つくれません') +
+        '・おと: ' + (c ? (c.state || 'ふめい') : 'なし') + '・むおんの ループ: ' + (k ? (k.paused ? 'とまって いる' : 'あり') : 'なし'));
       KJ.snd.on = was;
     });
     global.addEventListener('resize', sizePic, false);
@@ -334,6 +369,12 @@
       KJ.saveState(S); renderHome(); show('home');
     });
     KJ.snd.on = (S.sound !== false);
+    doc.addEventListener('touchstart', pressOn, false);
+    doc.addEventListener('touchend', pressOff, false);
+    doc.addEventListener('touchcancel', pressOff, false);
+    doc.addEventListener('click', pressOff, false);
+    /* ピンチの 拡大を とめる（iOS 10 は user-scalable=no を きかない） */
+    doc.addEventListener('gesturestart', function (ev) { ev.preventDefault(); }, false);
     doc.addEventListener('touchend', function () { KJ.snd.unlock(); }, false);
     doc.addEventListener('click', function (ev) { KJ.snd.unlock(); if (ev.target && ev.target.tagName === 'BUTTON') { KJ.snd.play('tap'); } }, false);
     tidyUrl();
@@ -343,6 +384,7 @@
   }
   /* 試験用＝画面を 直接 うごかす 入口 */
   KJ.ui = { startQuiz: startQuiz, showReveal: function () { clearTimers(); showReveal(); }, toggleZoom: toggleZoom, startBreath: startBreath, onChoice: onChoice, onNext: onNext, openMagic: openMagic, startFinal: startFinal,
+    startMagic: startMagic, home: function () { renderHome(); show('home'); },
     round: function () { return G; }, state: function () { return S; }, flush: function () { var t = timers.slice(0); return t.length; } };
 
   if (doc.readyState === 'loading') { doc.addEventListener('DOMContentLoaded', init, false); } else { init(); }

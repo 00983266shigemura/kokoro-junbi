@@ -1,6 +1,6 @@
 # こころの じゅんび ── 公開前の検査をまとめて回す（CCが使う。しげ用の台本は push.zsh）
 #   1 組み立て  2 古い書き方  3 字の在庫・子どもの画面の漢字・書かない語  4 ホーム画面の絵
-#   5 自己点検（本物のブラウザで src/app.js を実行）  6 iPad よこおきの 1がめん＋無音
+#   5 自己点検（本物のブラウザで、組み立てた index.html の無音の複製を開いて実行）  6 iPad よこおきの 1がめん＋無音
 # 終了コード 0=全部PASS / 1=どれか不合格
 ROOT="/Users/shigemurasatoshi/dev/kokoro-junbi"
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
@@ -24,7 +24,8 @@ print "== 3c/6 公開物の書かない語（受験校・日程・受験番号�
 /usr/bin/python3 "$ROOT/tools/check_private.py" "$ROOT/index.html" "$ROOT/README.md" "$ROOT/offline.appcache" || touch "$FAILFILE"
 print "== 4/6 ホーム画面の絵 =="
 /usr/bin/python3 "$ROOT/tools/make_icon.py" --check || touch "$FAILFILE"
-print "== 5/6 自己点検（ブラウザで実行） =="
+print "== 5/6 自己点検（ブラウザで実行・組み立てた画面の無音の複製で） =="
+/usr/bin/python3 "$ROOT/tools/mkpage.py" || touch "$FAILFILE"
 TMP="$ROOT/logs/selftest_dom.html"
 "$CHROME" --headless=new --disable-gpu --no-sandbox --allow-file-access-from-files --virtual-time-budget=20000 \
   --dump-dom "file://$ROOT/tools/test.html" > "$TMP" 2>/dev/null

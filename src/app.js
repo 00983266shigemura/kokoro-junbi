@@ -9,7 +9,7 @@
   var KJ = global.KJ || {};
   global.KJ = KJ;
 
-  KJ.APP_VERSION = 3;
+  KJ.APP_VERSION = 4;
   KJ.SCHEMA = 1;
   KJ.STORE_KEY = 'kokoro_junbi_v1';
 
@@ -201,6 +201,18 @@
       return true;
     } catch (e) { return false; }
   };
+  /* 鳴らす たびに 音の しくみが とまって いないか みる（K4）。
+     iPad は べつの アプリや 着信・画面の とじで 音の しくみを とめる（suspended・interrupted）。とまったままだと 鳴らない。
+     running いがい（state の ない 古い しくみも ふくむ）なら resume を よぶ。しっぱいしても とまらない */
+  snd.wake = function () {
+    var c = snd.ctx, p;
+    if (!c || !c.resume || c.state === 'running') { return false; }
+    try {
+      p = c.resume();
+      if (p && p.then) { p.then(null, function () { /* つぎの タッチで また おこす */ }); }
+    } catch (e) { /* 鳴らなくても つかえる */ }
+    return true;
+  };
   function tone(ctx, freq, at, dur, vol, type) {
     var o = ctx.createOscillator(), g = ctx.createGain(), peak = Math.max(0.0002, vol * snd.vol);
     o.type = type || 'sine';
@@ -215,6 +227,7 @@
     var ctx = snd.ctx, seq = SOUNDS[name], t0, i, n;
     if (!snd.on || !ctx || !seq) { return false; }
     try {
+      snd.wake();
       t0 = ctx.currentTime + 0.01;
       for (i = 0; i < seq.length; i++) { n = seq[i]; tone(ctx, NOTE[n[0]], t0 + n[1], n[2], n[3], n[4]); }
       return true;
@@ -237,8 +250,14 @@
 
   /* ================= 自己点検（CC が tools/test.html から よぶ） ================= */
   KJ.selfTest = function (doc) {
-    var pass = 0, fail = 0, lines = [], i, j, s, ids = {}, n5, w, k;
+    var pass = 0, fail = 0, lines = [], info = [], keys = [], i, j, s, ids = {}, n5, w, k;
     function ok(cond, msg) { if (cond) { pass++; } else { fail++; lines.push('FAIL ' + msg); } }
+    /* K番号の 項目＝ひとまとまりで まわし、ぜんぶ 合格なら KEYS に のせる */
+    function kblock(key, fn) {
+      var before = fail;
+      try { fn(); } catch (e) { ok(false, key + ' 例外 ' + (e && e.message ? e.message : e)); }
+      if (fail === before) { keys.push(key); }
+    }
     ok(SCENES.length === 10, 'ばめんは 10こ');
     n5 = KJ.pickScenes(true).length;
     ok(n5 === 5, 'みじかい は 5こ（いま ' + n5 + '）');
@@ -316,7 +335,94 @@
     /* きろく */
     s = freshState();
     ok(s.sound === true && s.yobikata === 0 && s.shortMode === false, 'はじめの きろく');
+    kblock('K4', function () { selfTestK4(ok, info); });
+    kblock('K26', function () { selfTestK26(doc, ok, info); });
+    kblock('K30', function () { selfTestK30(doc, ok, info); });
     lines.unshift('PASS=' + pass + ' FAIL=' + fail);
-    return lines;
+    return lines.concat(info, ['KEYS=' + keys.join(',')]);
   };
+
+  /* K4＝とまった 音の しくみ（にせもの）で 鳴らすと resume が よばれる。うごいて いる ときは よばない。resume が しっぱいしても とまらない */
+  function selfTestK4(ok, info) {
+    var keepCtx = snd.ctx, keepOn = snd.on, called = 0, made = 0, r1, r2, r3, fake, st = [];
+    function nop() {}
+    fake = { state: 'suspended', currentTime: 0, destination: {},
+      resume: function () { called++; st.push(fake.state); fake.state = 'running'; return null; },
+      createOscillator: function () { made++; return { type: '', frequency: { setValueAtTime: nop }, connect: nop, start: nop, stop: nop }; },
+      createGain: function () { return { gain: { setValueAtTime: nop, linearRampToValueAtTime: nop, exponentialRampToValueAtTime: nop }, connect: nop }; } };
+    try {
+      snd.ctx = fake; snd.on = true;
+      r1 = snd.play('tap');
+      ok(called === 1 && r1 === true && made === 1, 'K4 とまった（suspended）音の しくみは 鳴らす ときに resume する（よんだ ' + called + 'かい）');
+      snd.play('tap');
+      ok(called === 1, 'K4 うごいて いる（running）ときは resume を よばない');
+      fake.state = 'interrupted';
+      r2 = snd.play('ok');
+      ok(called === 2 && r2 === true, 'K4 interrupted でも resume する');
+      fake.state = 'suspended';
+      fake.resume = function () { called++; st.push('throw'); throw new Error('resume しっぱい'); };
+      r3 = snd.play('tap');
+      ok(called === 3 && r3 === true, 'K4 resume が しっぱいしても 鳴らす しょりは とまらない');
+    } finally { snd.ctx = keepCtx; snd.on = keepOn; }
+    info.push('K4 おとの おこしなおし resume=' + called + 'かい（' + st.join('→') + '）・つくった おと=' + made + 'こ');
+  }
+
+  /* K26＝子どもが おす ボタン ぜんぶに touchstart を おくると press が つき、touchend で とれる。おとなの ボタンには つかない */
+  function selfTestK26(doc, ok, info) {
+    var P = KJ.press, all, list = [], i, n, kids = [], adults = [], ev, inner;
+    function fire(node, type) { ev = doc.createEvent('Event'); ev.initEvent(type, true, true); node.dispatchEvent(ev); }
+    function has(node) { return (' ' + node.className + ' ').indexOf(' press ') >= 0; }
+    function label(node) { return node.id || (node.className.split(' ')[0] + (node.getAttribute('data-i') !== null ? node.getAttribute('data-i') : (node.getAttribute('data-m') || ''))); }
+    if (!doc || !doc.getElementById('scr-home') || !KJ.ui || !P) {
+      ok(false, 'K26 アプリの 画面が ない（tools/test.html は 無音の 複製を ひらく）');
+      return;
+    }
+    /* 画面を つくって あとから できる ボタン（えらぶ・3つの ことば）も ならべる */
+    KJ.ui.startQuiz(); KJ.ui.startMagic();
+    all = doc.getElementsByTagName('button');
+    for (i = 0; i < all.length; i++) { list.push(all[i]); }
+    list.push(doc.getElementById('rv-pic'));
+    for (i = 0; i < list.length; i++) {
+      n = list[i];
+      if (P.adult(n)) {
+        adults.push(label(n));
+        ok(P.target(n) === null, 'K26 おとなの ボタンは のぞく ' + label(n));
+        fire(n, 'touchstart'); ok(!has(n), 'K26 おとなの ボタンに press が つかない ' + label(n)); fire(n, 'touchend');
+      } else {
+        kids.push(label(n));
+        ok(P.target(n) === n, 'K26 子どもの ボタンは たいしょう ' + label(n));
+        fire(n, 'touchstart'); ok(has(n), 'K26 touchstart で press が つく ' + label(n));
+        fire(n, 'touchend'); ok(!has(n), 'K26 touchend で press が とれる ' + label(n));
+      }
+    }
+    /* ボタンの 中の 字を さわっても ボタンが へこむ・touchcancel でも とれる */
+    inner = doc.getElementById('choices').getElementsByTagName('span')[1];
+    fire(inner, 'touchstart'); ok(has(inner.parentNode), 'K26 ボタンの 中の 字を さわっても ボタンに press');
+    fire(inner, 'touchcancel'); ok(!has(inner.parentNode), 'K26 touchcancel で press が とれる');
+    ok(kids.length >= 15, 'K26 子どもの ボタンが 15こ いじょう（いま ' + kids.length + '）');
+    KJ.ui.home();
+    info.push('K26 おした てごたえ たいしょう=' + kids.length + 'こ（' + kids.join(',') + '）');
+    info.push('K26 のぞいた=' + adults.length + 'こ（おとなの ボタン: ' + adults.join(',') + '）');
+  }
+
+  /* K30＝window.onerror を じかに よぶと 下の おびが 出て、1ぎょうめ（かな）と 2ぎょうめ（なまの エラー）が はいる。さわると きえる */
+  function selfTestK30(doc, ok, info) {
+    var E = global.KJ_ERR, band, keep, t1 = '', t2 = '', vis = false, ev, q;
+    band = doc ? doc.getElementById('err-band') : null;
+    if (!E || !band || typeof global.onerror !== 'function') { ok(false, 'K30 おびか window.onerror が ない'); return; }
+    ok(band.offsetHeight === 0, 'K30 ふだんは おびを 出さない');
+    keep = E.list.slice(0); E.list.length = 0;
+    try {
+      global.onerror('K30 わざと おこした エラー', 'test.js', 123, 4, null);
+      vis = band.style.display === 'block' && band.offsetHeight > 0;
+      t1 = doc.getElementById('err-band-h').textContent;
+      t2 = doc.getElementById('err-band-raw').textContent;
+      ok(vis, 'K30 エラーで おびが 出る');
+      ok(t1.indexOf('ごめんね') === 0, 'K30 1ぎょうめは かなの おわび: ' + t1);
+      ok(t2.indexOf('K30 わざと おこした エラー') >= 0 && t2.indexOf('123') >= 0, 'K30 2ぎょうめに なまの エラーと ぎょう: ' + t2);
+      ev = doc.createEvent('Event'); ev.initEvent('click', true, true); band.dispatchEvent(ev);
+      ok(band.offsetHeight === 0, 'K30 おびを さわると きえる');
+    } finally { E.list.length = 0; for (q = 0; q < keep.length; q++) { E.list.push(keep[q]); } }
+    info.push('K30 エラーの おび=' + (vis ? 'でた' : 'でない') + ' 1ぎょうめ「' + t1 + '」 2ぎょうめ「' + t2 + '」');
+  }
 })(window);
